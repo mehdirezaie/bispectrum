@@ -14,8 +14,10 @@ mpl.use('Agg')
 
 #--- input parameters ---
 ixmax  = 1000                                  # maximum mock index (FIX: some mocks are missing)
-KMIN, KMAX = 0.1, 0.175                         # for applying a cut on k, to reduce the cov matrix dimension
+KMIN, KMAX = 0.004, 0.296                         # for applying a cut on k, to reduce the cov matrix dimension
+alphas = np.linspace(0.1, 1.9, 1001) # range of alphas
 bkr_file = '/mnt/data1/BispectrumGLAM/output/bkr_0114.npz'  # a numpy file that has k1,k2,k3 and ratios of bispectra
+output2dalpha = '/mnt/data1/BispectrumGLAM/output/alpha2d.txt'
 f_bao  = lambda ix:f'/mnt/data1/BispectrumGLAM/BAO/Bk_CatshortV.0114.{ix:04d}.h5' 
 f_nbao = lambda ix:f'/mnt/data1/BispectrumGLAM/noBAO/Bk_CatshortV.0114.{ix:04d}.h5'	
 
@@ -51,7 +53,7 @@ def read_ratios(ixmax): # read bispectra files and return ratios
 			bk1t += bk1[:, -1]
 			bk2t += bk2[:, -1]
 			bkr.append(bk1[:, -1]/bk2[:, -1])
-	print(bk1)
+	#print(bk1)
 	k = bk1[:, :3]
 	bkr = np.array(bkr).T
 	bkrm = bk1t / bk2t
@@ -98,8 +100,45 @@ class Interpolate3D(object):
 	def __call__(self, *arrays):
 		return self.br3d_int(*arrays)
 
-def run(nalpha):
-	alphas = np.linspace(0.9, 1.1, nalpha) # range of alphas
+def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
+	
+
+	# apply cut on k
+	#print(f'applying cut on k: {KMIN:.3f} < k < {KMAX:.3f}')
+	is_good = np.ones(k.shape[0], '?')
+	for i in range(3):is_good &= (k[:, i] > kmin) & (k[:, i] < kmax)
+	kg = k[is_good, :]
+	bg = bkrm[is_good]
+	nbins, nmocks = br[is_good, :].shape
+	hartlapf = (nmocks-1.0)/(nmocks-nbins-2.0)
+	#print(f'kmax={kmax}, kmin={kmin}, nbins={nbins}, nmocks={nmocks}')
+	cov = np.cov(br[is_good, :], rowvar=True)*hartlapf / nmocks
+	#print(5*'\n')
+	#print(cov[:3, :3])
+
+	icov = np.linalg.inv(cov)
+	#print(f'k shape: {kg.shape}')
+	#print(f'bkrm shape: {bg.shape}')
+
+	# check interpolation
+	#print("checking the input k points and interpolated values")
+	#print("k1 k2 k3 B(k1, k2, k3) interpolation")
+	#print(np.column_stack([kg[:5, :], bg[:5], br3d(kg[:5, :])]))
+
+	# 
+	#print("run 1D regression, varying alpha, k1'=ak1, k2'=ak2, k3'=ak3")
+	#print("alpha chi2")
+	alpha_1sig = np.nan
+	for alpha in alphas:
+		res  = bg - br3d(alpha*kg)
+		chi2 = res.dot(icov.dot(res))
+		#print(f'{alpha:.2f} {chi2:.5f}')
+		if (abs(chi2)<1):alpha_1sig = alpha
+
+	#print(f'alpha 1sig: {1-alpha_1sig:.2f}')
+	return abs(1-alpha_1sig)
+
+def run():
 
 	# read the ratio of bispectra and ratio of means
 	k, br, bkrm = read(bkr_file)
@@ -109,33 +148,14 @@ def run(nalpha):
 
 	# fill in the 3D matrix
 	br3d = Interpolate3D(k, bkrm)
+	alpha_1sig = []
+	for kmax_ in np.arange(KMIN+0.02, KMAX, 0.01):
+		for kmin_ in np.arange(KMIN, kmax_-0.02, 0.01):
+			dalpha_ = get_alpha1sig(k, bkrm, br, br3d, kmax=kmax_, kmin=kmin_)
+			alpha_1sig.append([kmin_, kmax_, dalpha_])
 
-	# apply cut on k
-	print(f'applying cut on k: {KMIN:.3f} < k < {KMAX:.3f}')
-	is_good = np.ones(k.shape[0], '?')
-	for i in range(3):is_good &= (k[:, i] > KMIN) & (k[:, i] < KMAX)
-	kg = k[is_good, :]
-	bg = bkrm[is_good]
-	hartlapf = 1.0 # FIXME
-	cov = np.cov(br[is_good, :], rowvar=True)*hartlapf / br.shape[1]
-	icov = np.linalg.inv(cov)
-	del br
-	print(f'k shape: {kg.shape}')
-	print(f'bkrm shape: {bg.shape}')
-
-	# check interpolation
-	print("checking the input k points and interpolated values")
-	print("k1 k2 k3 B(k1, k2, k3) interpolation")
-	print(np.column_stack([kg[:5, :], bg[:5], br3d(kg[:5, :])]))
-
-	# 
-	print("run 1D regression, varying alpha, k1'=ak1, k2'=ak2, k3'=ak3")
-	print("alpha chi2")
-	for alpha in alphas:
-		res  = bg - br3d(alpha*kg)
-		chi2 = res.dot(icov.dot(res))
-		print(f'{alpha:.2f} {chi2:.5f}')
-
+	np.savetxt(output2dalpha, np.array(alpha_1sig), header='kmin, kmax, alpha [1sigma]')
+	print(f'wrote {output2dalpha}')
 
 if __name__ == '__main__':
-	run(int(sys.argv[1]))
+	run()
