@@ -104,7 +104,7 @@ def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
 	
 
 	# apply cut on k
-	print(f'applying cut on k: {KMIN:.3f} < k < {KMAX:.3f}')
+	print(f'applying cut on k: {kmin:.3f} < k < {kmax:.3f}')
 	is_good = np.ones(k.shape[0], '?')
 	for i in range(3):is_good &= (k[:, i] > kmin) & (k[:, i] < kmax)
 	kg = k[is_good, :]
@@ -134,7 +134,7 @@ def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
 		res  = bg - br3d(alpha*kg)
 		chi2 = res.dot(icov.dot(res))
 		#print(f'{alpha:.2f} {chi2:.5f}')
-		if (abs(chi2)<1.0e-6):has_passed_global = True
+		if (abs(chi2) < 0.1):has_passed_global = True
 		if (abs(chi2-1) < 0.5) & (has_passed_global):
 			alpha_1sig = alpha
 			break
@@ -155,7 +155,7 @@ def run():
 	#dalpha_ = get_alpha1sig(k, bkrm, br, br3d, kmax=kmax_, kmin=kmin_)
 	#print('dalpha', dalpha_)
 	alpha_1sig = []
-	for kmax_ in np.arange(KMIN+0.02, KMAX, 0.01):
+	for kmax_ in np.arange(KMIN, KMAX, 0.01):
 		for kmin_ in np.arange(KMIN, kmax_-0.02, 0.01):
 			dalpha_ = get_alpha1sig(k, bkrm, br, br3d, kmax=kmax_, kmin=kmin_)
 			alpha_1sig.append([kmin_, kmax_, dalpha_])
