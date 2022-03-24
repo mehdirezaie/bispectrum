@@ -15,7 +15,7 @@ mpl.use('Agg')
 #--- input parameters ---
 ixmax  = 1000                                  # maximum mock index (FIX: some mocks are missing)
 KMIN, KMAX = 0.004, 0.296                         # for applying a cut on k, to reduce the cov matrix dimension
-alphas = np.linspace(0.7, 1.3, 1001) # range of alphas
+alphas = np.linspace(0.2, 1.8, 1001) # range of alphas
 bkr_file = '/mnt/data1/BispectrumGLAM/output/bkr_0114.npz'  # a numpy file that has k1,k2,k3 and ratios of bispectra
 output2dalpha = '/mnt/data1/BispectrumGLAM/output/alpha2d.txt'
 f_bao  = lambda ix:f'/mnt/data1/BispectrumGLAM/BAO/Bk_CatshortV.0114.{ix:04d}.h5' 
@@ -135,7 +135,7 @@ def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
 		chi2 = res.dot(icov.dot(res))
 		#print(f'{alpha:.2f} {chi2:.5f}')
 		if (abs(chi2)<1.0e-6):has_passed_global = True
-		if (abs(chi2-1) < 0.1) & (has_passed_global):
+		if (abs(chi2-1) < 0.5) & (has_passed_global):
 			alpha_1sig = alpha
 			break
 
