@@ -13,11 +13,11 @@ from scipy.interpolate import RegularGridInterpolator as rgi
 mpl.use('Agg') 
 
 #--- input parameters ---
-ixmax  = 1000                                  # maximum mock index (FIX: some mocks are missing)
-KMIN, KMAX = 0.004, 0.296                         # for applying a cut on k, to reduce the cov matrix dimension
-alphas = np.linspace(0.2, 1.8, 1001) # range of alphas
-bkr_file = '/mnt/data1/BispectrumGLAM/output/bkr_0114.npz'  # a numpy file that has k1,k2,k3 and ratios of bispectra
-output2dalpha = '/mnt/data1/BispectrumGLAM/output/alpha2d.txt'
+ixmax  = 1000                        # maximum mock index (FIX: some mocks are missing)
+KMIN, KMAX = 0.004, 0.296            # for applying a cut on k, to reduce the cov matrix dimension
+alphas = np.linspace(1.0, 1.8, 800) # range of alphas
+bkr_file = '/mnt/data1/BispectrumGLAM/output/bkr_0114.npz'      # a numpy binary file that has k1,k2,k3 and ratios of bispectra
+output2dalpha = '/mnt/data1/BispectrumGLAM/output/alpha2d.txt'  # a txt file that will contain kmin, kmax, alpha_1simga
 f_bao  = lambda ix:f'/mnt/data1/BispectrumGLAM/BAO/Bk_CatshortV.0114.{ix:04d}.h5' 
 f_nbao = lambda ix:f'/mnt/data1/BispectrumGLAM/noBAO/Bk_CatshortV.0114.{ix:04d}.h5'	
 
@@ -113,6 +113,7 @@ def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
 	hartlapf = (nmocks-1.0)/(nmocks-nbins-2.0)
 	print(f'kmax={kmax}, kmin={kmin}, nbins={nbins}, nmocks={nmocks}')
 	cov = np.cov(br[is_good, :], rowvar=True)*hartlapf / nmocks
+	#if np.linalg.det(cov) < 1.0e-3
 	#print(5*'\n')
 	#print(cov[:3, :3])
 
@@ -129,16 +130,15 @@ def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
 	print("run 1D regression, varying alpha, k1'=ak1, k2'=ak2, k3'=ak3")
 	print("alpha chi2")
 	alpha_1sig = np.nan
-	has_passed_global = False
 	for alpha in alphas:
 		res  = bg - br3d(alpha*kg)
 		chi2 = res.dot(icov.dot(res))
 		#print(f'{alpha:.2f} {chi2:.5f}')
-		if (abs(chi2) < 0.1):has_passed_global = True
-		if (abs(chi2-1) < 0.5) & (has_passed_global):
+		if (abs(chi2-1) < 0.1):
 			alpha_1sig = alpha
 			break
 
+	print(alpha_1sig)
 	return abs(alpha_1sig-1.)
 
 def run():
