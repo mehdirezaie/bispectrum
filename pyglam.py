@@ -113,9 +113,8 @@ def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
 	hartlapf = (nmocks-1.0)/(nmocks-nbins-2.0)
 	print(f'kmax={kmax}, kmin={kmin}, nbins={nbins}, nmocks={nmocks}')
 	cov = np.cov(br[is_good, :], rowvar=True)*hartlapf / nmocks
-	#if np.linalg.det(cov) < 1.0e-3
-	#print(5*'\n')
-	#print(cov[:3, :3])
+	if np.linalg.det(cov) == 0.0:
+		return np.nan
 
 	icov = np.linalg.inv(cov)
 	print(f'k shape: {kg.shape}')
@@ -138,7 +137,6 @@ def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
 			alpha_1sig = alpha
 			break
 
-	print(alpha_1sig)
 	return abs(alpha_1sig-1.)
 
 def run():
