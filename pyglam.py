@@ -15,7 +15,7 @@ mpl.use('Agg')
 #--- input parameters ---
 ixmax  = 1000                        # maximum mock index (FIX: some mocks are missing)
 KMIN, KMAX = 0.004, 0.296            # for applying a cut on k, to reduce the cov matrix dimension
-alphas = np.linspace(1.0, 1.8, 800) # range of alphas
+alphas = np.linspace(1.0, 1.8, 8000) # range of alphas
 bkr_file = '/mnt/data1/BispectrumGLAM/output/bkr_0114.npz'      # a numpy binary file that has k1,k2,k3 and ratios of bispectra
 output2dalpha = '/mnt/data1/BispectrumGLAM/output/alpha2d.txt'  # a txt file that will contain kmin, kmax, alpha_1simga
 f_bao  = lambda ix:f'/mnt/data1/BispectrumGLAM/BAO/Bk_CatshortV.0114.{ix:04d}.h5' 
