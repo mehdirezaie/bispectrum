@@ -13,9 +13,10 @@ from scipy.interpolate import interp1d
 mpl.use('Agg') 
 
 #--- input parameters ---
+ngrid = 80
 ixmax  = 1000                        # maximum mock index (FIX: some mocks are missing)
 KMIN, KMAX = 0.004, 0.296            # for applying a cut on k, to reduce the cov matrix dimension
-alphas = np.linspace(1.0, 1.8, 8000) # range of alphas
+alphas = np.linspace(1.0, 1.8, 80) # range of alphas
 bkr_file = '/mnt/data1/BispectrumGLAM/output/pkr_0114.npz'      # a numpy binary file that has k and ratios of power spectra
 output2dalpha = '/mnt/data1/BispectrumGLAM/output/alpha2d_pk.txt'  # a txt file that will contain kmin, kmax, alpha_1simga
 
@@ -116,13 +117,13 @@ def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
 	#print(np.column_stack([kg[:5], bg[:5], br3d(kg[:5])]))
 
 	# 
-	#print("run 1D regression, varying alpha, k1'=ak1 ")
-	#print("alpha chi2")
+	print("run 1D regression, varying alpha, k1'=ak1 ")
+	print("alpha chi2")
 	alpha_1sig = np.nan
 	for alpha in alphas:
 		res  = bg - br3d(alpha*kg)
 		chi2 = res.dot(icov.dot(res))
-		#print(f'{alpha:.2f} {chi2:.5f}')
+		print(f'{alpha:.2f} {chi2:.5f}')
 		if (abs(chi2-1) < 0.1):
 			alpha_1sig = alpha
 			break
@@ -143,8 +144,8 @@ def run():
 	#dalpha_ = get_alpha1sig(k, bkrm, br, br3d, kmax=kmax_, kmin=kmin_)
 	#print('dalpha', dalpha_)
 	alpha_1sig = []
-	for kmax_ in np.arange(KMIN, KMAX, 0.01):
-		for kmin_ in np.arange(KMIN, kmax_-0.02, 0.01):
+	for kmax_ in [0.1]: #np.arange(KMIN, KMAX, 0.01):
+		for kmin_ in [0.15]: #np.arange(KMIN, kmax_-0.02, 0.01):
 			dalpha_ = get_alpha1sig(k, bkrm, br, br3d, kmax=kmax_, kmin=kmin_)
 			alpha_1sig.append([kmin_, kmax_, dalpha_])
 
