@@ -15,7 +15,7 @@ mpl.use('Agg')
 #--- input parameters ---
 ixmax  = 1000                        # maximum mock index (FIX: some mocks are missing)
 KMIN, KMAX = 0.004, 0.296            # for applying a cut on k, to reduce the cov matrix dimension
-alphas = np.linspace(1.0, 1.8, 80) # range of alphas
+alphas = np.linspace(1.0, 1.8, 8000) # range of alphas
 bkr_file = '/mnt/data1/BispectrumGLAM/output/bkr_0114.npz'      # a numpy binary file that has k1,k2,k3 and ratios of bispectra
 output2dalpha = '/mnt/data1/BispectrumGLAM/output/alpha2d.txt'  # a txt file that will contain kmin, kmax, alpha_1simga
 f_bao  = lambda ix:f'/mnt/data1/BispectrumGLAM/BAO/Bk_CatshortV.0114.{ix:04d}.h5' 
@@ -104,33 +104,33 @@ def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
 	
 
 	# apply cut on k
-	print(f'applying cut on k: {kmin:.3f} < k < {kmax:.3f}')
+	#print(f'applying cut on k: {kmin:.3f} < k < {kmax:.3f}')
 	is_good = np.ones(k.shape[0], '?')
 	for i in range(3):is_good &= (k[:, i] > kmin) & (k[:, i] < kmax)
 	kg = k[is_good, :]
 	bg = bkrm[is_good]
 	nbins, nmocks = br[is_good, :].shape
 	hartlapf = (nmocks-1.0)/(nmocks-nbins-2.0)
-	print(f'kmax={kmax}, kmin={kmin}, nbins={nbins}, nmocks={nmocks}')
-	print(f'kg: {kg}')
-	print(f'bk ratio: {bg}')
+	#print(f'kmax={kmax}, kmin={kmin}, nbins={nbins}, nmocks={nmocks}')
+	#print(f'kg: {kg}')
+	#print(f'bk ratio: {bg}')
 	cov = np.cov(br[is_good, :], rowvar=True)*hartlapf / nmocks
 	if np.linalg.det(cov) == 0.0:
 		return np.nan
 
 	#print(f'cov. {cov}')
 	icov = np.linalg.inv(cov)
-	print(f'k shape: {kg.shape}')
-	print(f'bkrm shape: {bg.shape}')
+	#print(f'k shape: {kg.shape}')
+	#print(f'bkrm shape: {bg.shape}')
 
 	# check interpolation
-	print("checking the input k points and interpolated values")
-	print("k1 k2 k3 B(k1, k2, k3) interpolation")
-	print(np.column_stack([kg[:5, :], bg[:5], br3d(kg[:5, :])]))
+	#print("checking the input k points and interpolated values")
+	#print("k1 k2 k3 B(k1, k2, k3) interpolation")
+	#print(np.column_stack([kg[:5, :], bg[:5], br3d(kg[:5, :])]))
 
 	# 
-	print("run 1D regression, varying alpha, k1'=ak1, k2'=ak2, k3'=ak3")
-	print("alpha chi2")
+	#print("run 1D regression, varying alpha, k1'=ak1, k2'=ak2, k3'=ak3")
+	#print("alpha chi2")
 	alpha_1sig = np.nan
 	for alpha in alphas:
 		res  = bg - br3d(alpha*kg)
