@@ -118,7 +118,7 @@ def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
 	if np.linalg.det(cov) == 0.0:
 		return np.nan
 
-	print(f'cov. {cov}')
+	#print(f'cov. {cov}')
 	icov = np.linalg.inv(cov)
 	print(f'k shape: {kg.shape}')
 	print(f'bkrm shape: {bg.shape}')
@@ -135,7 +135,7 @@ def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
 	for alpha in alphas:
 		res  = bg - br3d(alpha*kg)
 		chi2 = res.dot(icov.dot(res))
-		print(f'{alpha:.2f} {chi2:.5f}')
+		#print(f'{alpha:.2f} {chi2:.5f}')
 		if (abs(chi2-1) < 0.1):
 			alpha_1sig = alpha
 			break
@@ -156,8 +156,8 @@ def run():
 	#dalpha_ = get_alpha1sig(k, bkrm, br, br3d, kmax=kmax_, kmin=kmin_)
 	#print('dalpha', dalpha_)
 	alpha_1sig = []
-	for kmax_ in [0.2]:#np.arange(KMIN, KMAX, 0.01):
-		for kmin_ in [0.15]:#np.arange(KMIN, kmax_-0.02, 0.01):
+	for kmax_ in np.arange(KMIN, KMAX, 0.01):
+		for kmin_ in np.arange(KMIN, kmax_-0.02, 0.01):
 			dalpha_ = get_alpha1sig(k, bkrm, br, br3d, kmax=kmax_, kmin=kmin_)
 			alpha_1sig.append([kmin_, kmax_, dalpha_])
 
