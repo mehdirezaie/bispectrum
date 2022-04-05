@@ -13,14 +13,24 @@ from scipy.interpolate import RegularGridInterpolator as rgi
 mpl.use('Agg') 
 
 #--- input parameters ---
-ixmax  = 1000                        # maximum mock index (FIX: some mocks are missing)
+is_bk = True
+ixmax  = 1000                        # maximum mock index
 KMIN, KMAX = 0.004, 0.296            # for applying a cut on k, to reduce the cov matrix dimension
 alphas = np.linspace(1.0, 1.8, 8000) # range of alphas
-bkr_file = '/mnt/data1/BispectrumGLAM/output/bkr_0114.npz'      # a numpy binary file that has k1,k2,k3 and ratios of bispectra
-output2dalpha = '/mnt/data1/BispectrumGLAM/output/alpha2d.txt'  # a txt file that will contain kmin, kmax, alpha_1simga
-f_bao  = lambda ix:f'/mnt/data1/BispectrumGLAM/BAO/Bk_CatshortV.0114.{ix:04d}.h5' 
-f_nbao = lambda ix:f'/mnt/data1/BispectrumGLAM/noBAO/Bk_CatshortV.0114.{ix:04d}.h5'	
 
+
+name_tag = 'glam_bk' if is_bk else 'glam_pk'
+bkr_file = f'/mnt/data1/BispectrumGLAM/output/{name_tag}_0114.npz' 
+alphas_file = f'/mnt/data1/BispectrumGLAM/output/{name_tag}_alphas.txt'
+
+if is_bk:
+	f_bao  = lambda ix:f'/mnt/data1/BispectrumGLAM/BAO/Bk_CatshortV.0114.{ix:04d}.h5' 
+	f_nbao = lambda ix:f'/mnt/data1/BispectrumGLAM/noBAO/Bk_CatshortV.0114.{ix:04d}.h5'	
+else:
+	raise NotImplemented()
+
+
+#--- helper functions
 def read_bkfile(input_file):
 	with open(input_file, 'r') as fl:
 		lines = fl.readlines()
@@ -30,8 +40,20 @@ def read_bkfile(input_file):
 			bk.append([k1, k2, k3, b])
 	return np.array(bk)
 
+
+def read_pkfile(input_file):
+	with open(input_file, 'r') as fl:
+		lines = fl.readlines()
+		pk = []
+		for line in lines:
+			k1, b = map(float, line.split('\t'))
+			pk.append([k1, b])
+	return np.array(pk)
+
+
 def check_if_exists(input_file): # if a file exists
     return os.path.exists(input_file)
+
 
 def savez(output_file, **kwargs): 
 	dirname = os.path.dirname(output_file)
@@ -39,10 +61,12 @@ def savez(output_file, **kwargs):
 	np.savez(output_file, **kwargs)
 	print(f'saved {output_file}')
 
+
 def read_ratios(ixmax): # read bispectra files and return ratios
 	bkr = []
 	bk1t = 0
 	bk2t = 0
+
 	for ix in range(ixmax+1):
 		f_bao_i = f_bao(ix)
 		f_nbao_i = f_nbao(ix)
@@ -52,12 +76,14 @@ def read_ratios(ixmax): # read bispectra files and return ratios
 			for i in range(3):assert np.array_equiv(bk1[:, i], bk2[:, i]), f"k%d does not match"%i
 			bk1t += bk1[:, -1]
 			bk2t += bk2[:, -1]
-			bkr.append(bk1[:, -1]/bk2[:, -1])
+			bkr.append(bk1[:, -1])
 	#print(bk1)
+	nmocks = len(bkr)
 	k = bk1[:, :3]
-	bkr = np.array(bkr).T
+	bkr = np.array(bkr).T / (bk2t[:, np.newaxis]/nmocks)
 	bkrm = bk1t / bk2t
 	return (k, bkr, bkrm)
+
 
 def read(bkr_file): # read bispectrum ratio file and return mean and cov matrix
 	if not check_if_exists(bkr_file):
@@ -137,10 +163,10 @@ def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
 		chi2 = res.dot(icov.dot(res))
 		#print(f'{alpha:.2f} {chi2:.5f}')
 		if (abs(chi2-1) < 0.1):
-			alpha_1sig = alpha
+			alpha_1sig = abs(alpha-1.0)
 			break
 
-	return abs(alpha_1sig-1.)
+	return alpha_1sig
 
 def run():
 
@@ -160,9 +186,10 @@ def run():
 		for kmin_ in np.arange(KMIN, kmax_-0.02, 0.01):
 			dalpha_ = get_alpha1sig(k, bkrm, br, br3d, kmax=kmax_, kmin=kmin_)
 			alpha_1sig.append([kmin_, kmax_, dalpha_])
+			print('.', end='')
 
-	np.savetxt(output2dalpha, np.array(alpha_1sig), header='kmin, kmax, alpha [1sigma]')
-	print(f'wrote {output2dalpha}')
+	np.savetxt(alphas_file, np.array(alpha_1sig), header='kmin, kmax, alpha [1sigma]')
+	print(f'wrote {alphas_file}')
 
 if __name__ == '__main__':
 	run()
