@@ -15,9 +15,11 @@ mpl.use('Agg')
 
 #--- input parameters ---
 is_bk = False
-ixmax  = 1000                        # maximum mock index
+debug = False
+npts = 8000
+ixmax = 1000                        # maximum mock index
 KMIN, KMAX = 0.004, 0.296            # for applying a cut on k, to reduce the cov matrix dimension
-alphas = np.linspace(1.0, 1.8, 8000) # range of alphas
+alphas = np.linspace(1.0, 1.8, npts) # range of alphas
 
 
 name_tag = 'glam_bk' if is_bk else 'glam_pk'
@@ -146,7 +148,7 @@ def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
 	bg = bkrm[is_good]
 	nbins, nmocks = br[is_good, :].shape
 	hartlapf = (nmocks-1.0)/(nmocks-nbins-2.0)
-	#print(f'kmax={kmax}, kmin={kmin}, nbins={nbins}, nmocks={nmocks}')
+	print(f'kmax={kmax}, kmin={kmin}, nbins={nbins}, nmocks={nmocks}')
 	#print(f'kg: {kg}')
 	#print(f'bk ratio: {bg}')
 	cov = np.cov(br[is_good, :], rowvar=True)*hartlapf / nmocks
@@ -191,9 +193,13 @@ def run():
 	else:
 		br_int = Interpolate1D(k, bkrm)
 
-	#kmin_, kmax_ = 0.1, 0.175
-	#dalpha_ = get_alpha1sig(k, bkrm, br, br3d, kmax=kmax_, kmin=kmin_)
-	#print('dalpha', dalpha_)
+
+	if debug:
+		kmin_, kmax_ = 0.1, 0.15
+		dalpha_ = get_alpha1sig(k, bkrm, br, br_int, kmax=kmax_, kmin=kmin_)
+		print('dalpha', dalpha_)
+		sys.exit()
+
 	alpha_1sig = []
 	for kmax_ in np.arange(KMIN, KMAX, 0.01):
 		for kmin_ in np.arange(KMIN, kmax_-0.02, 0.01):
