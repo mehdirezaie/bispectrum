@@ -14,12 +14,12 @@ from scipy.interpolate import interp1d
 mpl.use('Agg') 
 
 #--- input parameters ---
-is_bk = False
-debug = False
-npts = 8000
+is_bk = True
+debug = True
+npts = 100
 ixmax = 1000                        # maximum mock index
 KMIN, KMAX = 0.004, 0.296            # for applying a cut on k, to reduce the cov matrix dimension
-alphas = np.linspace(1.0, 1.8, npts) # range of alphas
+alphas = np.linspace(1.0, 1.1, npts) # range of alphas
 
 
 name_tag = 'glam_bk' if is_bk else 'glam_pk'
@@ -149,13 +149,14 @@ def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
 	nbins, nmocks = br[is_good, :].shape
 	hartlapf = (nmocks-1.0)/(nmocks-nbins-2.0)
 	print(f'kmax={kmax}, kmin={kmin}, nbins={nbins}, nmocks={nmocks}')
+	print(f'hartlap: {hartlapf:.3f}')
 	#print(f'kg: {kg}')
 	#print(f'bk ratio: {bg}')
 	cov = np.cov(br[is_good, :], rowvar=True)*hartlapf / nmocks
 	if np.linalg.det(cov) == 0.0:
 		return np.nan
 
-	#print(f'cov. {cov}')
+	if debug:print(f'cov. {cov}')
 	icov = np.linalg.inv(cov)
 	#print(f'k shape: {kg.shape}')
 	#print(f'bkrm shape: {bg.shape}')
@@ -172,8 +173,8 @@ def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
 	for alpha in alphas:
 		res  = bg - br3d(alpha*kg)
 		chi2 = res.dot(icov.dot(res))
-		#print(f'{alpha:.2f} {chi2:.5f}')
-		if (abs(chi2-1) < 0.1):
+		if debug:print(f'{alpha:.3f} {chi2:.5f}')
+		if (chi2 > 1):
 			alpha_1sig = abs(alpha-1.0)
 			break
 
