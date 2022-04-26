@@ -265,8 +265,8 @@ class Posterior:
 
 
 def run_mcmc():
-	kmin = 0.1
-	kmax = 0.17
+	kmin = 0.005
+	kmax = 0.25
 	ndim = 4
 	nwalkers = 30
 	nsteps = 10000
