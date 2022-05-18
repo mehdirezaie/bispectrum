@@ -21,13 +21,12 @@ from multiprocessing.pool import ThreadPool as Pool
 mpl.use('Agg') 
 
 #--- input parameters ---
-is_bk = False
-debug = False
-
-npts = 100
+is_bk = 0
+w_hart = 1
+npts = 1000001
 ixmax = 1000                        # maximum mock index
 KMIN, KMAX = 0.004, 0.296            # for applying a cut on k, to reduce the cov matrix dimension
-alphas = np.linspace(1.0, 1.1, npts) # range of alphas
+alphas = np.linspace(1.0, 1.02, npts) # range of alphas
 SEED = 85
 
 
@@ -52,7 +51,7 @@ def savez(output_file, **kwargs):
 	dirname = os.path.dirname(output_file)
 	if not check_if_exists(dirname):os.makedirs(dirname)
 	np.savez(output_file, **kwargs)
-	print(f'saved {output_file}')
+	print(f'# saved {output_file}')
 
 
 def read_ratios(ixmax): # read bispectra files and return ratios
@@ -95,7 +94,7 @@ def read(bkr_file): # read bispectrum ratio file and return mean and cov matrix
 		k, bkr, bkrm = read_ratios(ixmax)
 		savez(bkr_file, **{'k':k, 'bkr':bkr, 'bkrm':bkrm})
 	else:
-		print(f'{bkr_file} exists. reading ...')
+		print(f'# {bkr_file} exists. reading ...')
 		bkr_ = np.load(bkr_file)
 		k = bkr_['k']
 		bkr = bkr_['bkr']
@@ -113,7 +112,7 @@ class Interpolate3D(object):
 		nk = int((kmax-kmin)/dk) + 1
 		kg = np.arange(kmin, kmax+dk/2, dk)
 		#print(f'kmin={kmin:.3f}, kmax={kmax:.3f}, dk={dk:.3f}, nk={nk:d}')
-		br3d = np.zeros((nk, nk, nk))*np.nan
+		br3d = np.zeros((nk, nk, nk))#*np.nan
 		#print(f'initialized 3D B(k): {br3d.shape} with k-grid = {kg}:')
 		for ki in range(k.shape[0]):
 			i = int((k[ki, 0]-kmin)/dk)
@@ -126,7 +125,8 @@ class Interpolate3D(object):
 			br3d[l, j, i] = br[ki]
 			br3d[l, i, j] = br[ki]
 
-		self.br3d_int = rgi((kg, kg, kg), br3d, method='linear', bounds_error=False) # turn this to True to see the error
+		self.br3d_int = rgi((kg, kg, kg), br3d, 
+		                    method='linear', bounds_error=False, fill_value=None) # turn this to True to see the error
 		self.kg = kg
 
 	def __call__(self, *arrays):
@@ -150,7 +150,7 @@ class Interpolate1D(object):
 
 def select_k(k, kmin, kmax, bkrm, br):
 	# apply cut on k
-	print(f'applying cut on k: {kmin:.3f} < k < {kmax:.3f}')
+	#print(f'applying cut on k: {kmin:.3f} < k < {kmax:.3f}')
 	is_good = np.ones(k.shape[0], '?')
 	if is_bk:
 		for i in range(3):is_good &= (k[:, i] > kmin) & (k[:, i] < kmax)
@@ -161,44 +161,51 @@ def select_k(k, kmin, kmax, bkrm, br):
 	bg = bkrm[is_good]
 	nbins, nmocks = br[is_good, :].shape
 	hartlapf = (nmocks-1.0)/(nmocks-nbins-2.0)
-	print(f'kmax={kmax}, kmin={kmin}, nbins={nbins}, nmocks={nmocks}')
-	print(f'hartlap: {hartlapf:.3f}')
-	print(f'kg: {kg}')
-	print(f'bk ratio: {bg}')
-	cov = np.cov(br[is_good, :], rowvar=True)*hartlapf / nmocks
-	if np.linalg.det(cov) == 0.0:
-		raise RuntimeError("singular covariance, change kmin and kmax")
+	#print(f'kmax={kmax}, kmin={kmin}, nbins={nbins}, nmocks={nmocks}')
+	#print(f'hartlap: {hartlapf:.3f}')
+	#print(f'kg: {kg}')
+	#print(f'bk ratio: {bg}')
+	cov = np.cov(br[is_good, :], rowvar=True) / nmocks
+	if w_hart:
+	    cov = cov*hartlapf
+	#if np.linalg.det(cov) == 0.0:
+	#	print('singular', end='')
+	#	raise RuntimeError("singular covariance, change kmin and kmax")
 
 	icov = np.linalg.inv(cov)
-	print(f'k shape: {kg.shape}')
-	print(f'bkrm shape: {bg.shape}')
-	return kg, bg, icov
+	return kg, bg, icov, hartlapf
 
 
 
 def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
 	# apply cut on k
-	kg, bg, icov = select_k(k, kmin, kmax, bkrm, br)
+	kg, bg, icov, hf = select_k(k, kmin, kmax, bkrm, br)
 	
 	#print("run 1D regression, varying alpha, k1'=ak1, k2'=ak2, k3'=ak3")
 	#print("alpha chi2")
-	alpha_1sig = np.nan
+	chi2s = []
 	for alpha in alphas:
 		res  = bg - br3d(alpha*kg)
 		chi2 = res.dot(icov.dot(res))
-		if debug:print(f'{alpha:.3f} {chi2:.5f}')
-		if (chi2 > 1):
-			alpha_1sig = abs(alpha-1.0)
+		if chi2 > 1:
+			#print(alpha)
 			break
-	return alpha_1sig
+		#chi2s.append(chi2)
+
+	#chi2s = np.array(chi2s)
+	#print(np.column_stack([alphas, chi2s]))
+	#chi2s_int = interp1d(alphas, abs(chi2s-chi2s.min()-1), 
+	#					fill_value='extrapolate', 
+	#					bounds_error=False, kind='cubic')
+	#alpha_b = minimize(chi2s_int, 1.01)
+	return abs(alpha-1), hf
 
 
 def run_alpha2d():
-
 	# read the ratio of bispectra and ratio of means
 	k, br, bkrm = read(bkr_file)
-	print(f'k shape: {k.shape}')
-	print(f'br shape: {br.shape}')
+	print(f'# k shape: {k.shape}')
+	print(f'# br shape: {br.shape}')
 	print(f'bkrm shape: {bkrm.shape}')
 
 	if is_bk:
@@ -206,13 +213,6 @@ def run_alpha2d():
 		br_int = Interpolate3D(k, bkrm)
 	else:
 		br_int = Interpolate1D(k, bkrm)
-
-
-	if debug:
-		kmin_, kmax_ = 0.1, 0.15
-		dalpha_ = get_alpha1sig(k, bkrm, br, br_int, kmax=kmax_, kmin=kmin_)
-		print('dalpha', dalpha_)
-		sys.exit()
 
 	alpha_1sig = []
 	for kmax_ in np.arange(KMIN, KMAX, 0.01):
@@ -222,8 +222,32 @@ def run_alpha2d():
 			print('.', end='')
 
 	np.savetxt(alphas_file, np.array(alpha_1sig), header='kmin, kmax, alpha [1sigma]')
-	print(f'wrote {alphas_file}')
+	print(f'# wrote {alphas_file}')
 
+
+def run_alpha1d():
+
+	# read the ratio of bispectra and ratio of means
+	k, br, bkrm = read(bkr_file)
+	print(f'# k shape: {k.shape}')
+	print(f'# br shape: {br.shape}')
+	print(f'# bkrm shape: {bkrm.shape}')
+
+	if is_bk:
+		# fill in the 3D matrix
+		br_int = Interpolate3D(k, bkrm)
+	else:
+		br_int = Interpolate1D(k, bkrm)
+
+	print("#kmax    sigma    hartlap")
+	for kmax_ in np.arange(0.195, 0.055, -0.01):
+		sig_, hf_ = get_alpha1sig(k, bkrm, br, br_int, kmax=kmax_, kmin=0.005)
+		print(f'{kmax_:.3f} {sig_:.6f} {hf_:.6f}')
+		#		#alpha_1sig.append([kmin_, kmax_, dalpha_])
+		#print('.', end='')
+
+	#np.savetxt(alphas_file, np.array(alpha_1sig), header='kmin, kmax, alpha [1sigma]')
+	#print(f'wrote {alphas_file}')
 
 
 class Posterior:
@@ -329,4 +353,5 @@ def run_mcmc():
 
 
 if __name__ == '__main__':
-	run_mcmc()
+	run_alpha1d()
+	#run_mcmc()
