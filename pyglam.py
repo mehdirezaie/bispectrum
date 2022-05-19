@@ -126,7 +126,7 @@ class Interpolate3D(object):
 			br3d[l, i, j] = br[ki]
 
 		self.br3d_int = rgi((kg, kg, kg), br3d, 
-		                    method='linear', bounds_error=False, fill_value=None) # turn this to True to see the error
+		                    method='linear', bounds_error=False, fill_value=10.) # turn this to True to see the error
 		self.kg = kg
 
 	def __call__(self, *arrays):
@@ -142,7 +142,7 @@ class Interpolate1D(object):
 		dk = k[1]-k[0]
 		nk = k.size
 		#print(f'kmin={kmin:.3f}, kmax={kmax:.3f}, dk={dk:.3f}, nk={nk:d}')
-		self.br3d_int = interp1d(k, br, bounds_error=False, fill_value=0.0) # turn this to True to see the error
+		self.br3d_int = interp1d(k, br, bounds_error=False, fill_value=10.0) # turn this to True to see the error
 
 	def __call__(self, array):
 		return self.br3d_int(array)
@@ -177,7 +177,7 @@ def select_k(k, kmin, kmax, bkrm, br):
 
 
 
-def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
+def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN, print_chi2=False):
 	# apply cut on k
 	kg, bg, icov, hf = select_k(k, kmin, kmax, bkrm, br)
 	
@@ -187,6 +187,7 @@ def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN):
 	for alpha in alphas:
 		res  = bg - br3d(alpha*kg)
 		chi2 = res.dot(icov.dot(res))
+		print(alpha, chi2)
 		if chi2 > 1:
 			#print(alpha)
 			break
@@ -206,7 +207,7 @@ def run_alpha2d():
 	k, br, bkrm = read(bkr_file)
 	print(f'# k shape: {k.shape}')
 	print(f'# br shape: {br.shape}')
-	print(f'bkrm shape: {bkrm.shape}')
+	print(f'# bkrm shape: {bkrm.shape}')
 
 	if is_bk:
 		# fill in the 3D matrix
@@ -248,6 +249,26 @@ def run_alpha1d():
 
 	#np.savetxt(alphas_file, np.array(alpha_1sig), header='kmin, kmax, alpha [1sigma]')
 	#print(f'wrote {alphas_file}')
+
+
+def run_chi2():
+
+	# read the ratio of bispectra and ratio of means
+	k, br, bkrm = read(bkr_file)
+	print(f'# k shape: {k.shape}')
+	print(f'# br shape: {br.shape}')
+	print(f'# bkrm shape: {bkrm.shape}')
+
+	if is_bk:
+		# fill in the 3D matrix
+		br_int = Interpolate3D(k, bkrm)
+	else:
+		br_int = Interpolate1D(k, bkrm)
+
+	print("#kmax    sigma    hartlap")
+	kmax_ = 0.085 
+	sig_, hf_ = get_alpha1sig(k, bkrm, br, br_int, kmax=kmax_, kmin=0.005, print_chi2=True)
+	#print(f'{kmax_:.3f} {sig_:.6f} {hf_:.6f}')
 
 
 class Posterior:
@@ -353,5 +374,6 @@ def run_mcmc():
 
 
 if __name__ == '__main__':
-	run_alpha1d()
+	run_chi2()
+	#run_alpha1d()
 	#run_mcmc()
