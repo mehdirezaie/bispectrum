@@ -21,7 +21,7 @@ from multiprocessing.pool import ThreadPool as Pool
 mpl.use('Agg') 
 
 #--- input parameters ---
-is_bk = 0
+is_bk = 1
 w_hart = 1
 npts = 1000001
 ixmax = 1000                        # maximum mock index
@@ -33,7 +33,6 @@ SEED = 85
 name_tag = 'glam_bk' if is_bk else 'glam_pk'
 bkr_file = f'/mnt/data1/BispectrumGLAM/output/{name_tag}_0114.npz' 
 alphas_file = f'/mnt/data1/BispectrumGLAM/output/{name_tag}_alphas.txt'
-mcmc_file = f'/mnt/data1/BispectrumGLAM/output/{name_tag}_mcmc.npz'
  
 np.random.seed(SEED)
 
@@ -150,7 +149,6 @@ class Interpolate1D(object):
 
 def select_k(k, kmin, kmax, bkrm, br):
 	# apply cut on k
-	#print(f'applying cut on k: {kmin:.3f} < k < {kmax:.3f}')
 	is_good = np.ones(k.shape[0], '?')
 	if is_bk:
 		for i in range(3):is_good &= (k[:, i] > kmin) & (k[:, i] < kmax)
@@ -161,17 +159,9 @@ def select_k(k, kmin, kmax, bkrm, br):
 	bg = bkrm[is_good]
 	nbins, nmocks = br[is_good, :].shape
 	hartlapf = (nmocks-1.0)/(nmocks-nbins-2.0)
-	#print(f'kmax={kmax}, kmin={kmin}, nbins={nbins}, nmocks={nmocks}')
-	#print(f'hartlap: {hartlapf:.3f}')
-	#print(f'kg: {kg}')
-	#print(f'bk ratio: {bg}')
 	cov = np.cov(br[is_good, :], rowvar=True) / nmocks
 	if w_hart:
 	    cov = cov*hartlapf
-	#if np.linalg.det(cov) == 0.0:
-	#	print('singular', end='')
-	#	raise RuntimeError("singular covariance, change kmin and kmax")
-
 	icov = np.linalg.inv(cov)
 	return kg, bg, icov, hartlapf
 
@@ -181,24 +171,13 @@ def get_alpha1sig(k, bkrm, br, br3d, kmax=KMAX, kmin=KMIN, print_chi2=False):
 	# apply cut on k
 	kg, bg, icov, hf = select_k(k, kmin, kmax, bkrm, br)
 	
-	#print("run 1D regression, varying alpha, k1'=ak1, k2'=ak2, k3'=ak3")
-	#print("alpha chi2")
 	chi2s = []
 	for alpha in alphas:
 		res  = bg - br3d(alpha*kg)
 		chi2 = res.dot(icov.dot(res))
 		print(alpha, chi2)
 		if chi2 > 1:
-			#print(alpha)
 			break
-		#chi2s.append(chi2)
-
-	#chi2s = np.array(chi2s)
-	#print(np.column_stack([alphas, chi2s]))
-	#chi2s_int = interp1d(alphas, abs(chi2s-chi2s.min()-1), 
-	#					fill_value='extrapolate', 
-	#					bounds_error=False, kind='cubic')
-	#alpha_b = minimize(chi2s_int, 1.01)
 	return abs(alpha-1), hf
 
 
@@ -284,9 +263,9 @@ class Posterior:
         ''' The natural logarithm of the prior probability. '''
         lp = 0.
         # set prior to 1 (log prior to 0) if in the range and zero (-inf) outside the range
-        a, b, c, d = theta
+        a, b = theta
         lp += 0. if 0.8 < a < 1.2 else -np.inf
-        for param in [b, c, d]:
+        for param in [b, ]:
 	        lp += 0. if -2. < param < 2. else -np.inf
         
         ## Gaussian prior on ?
@@ -309,12 +288,14 @@ class Posterior:
 
 
 
-def run_mcmc():
+def run_mcmc(kmax=0.085):
 	kmin = 0.005
-	kmax = 0.25
-	ndim = 4
+	ndim = 2
 	nwalkers = 30
 	nsteps = 10000
+	initial_guess = [0.0 for i in range(ndim)]
+	mcmc_file = f'/mnt/data1/BispectrumGLAM/output/{name_tag}_ht_{w_hart}_mcmc_kmax{kmax:.3f}.npz'
+	print(mcmc_file)	
 	
 	# read the ratio of bispectra and ratio of means
 	k, br, bkrm = read(bkr_file)
@@ -328,10 +309,10 @@ def run_mcmc():
 	else:
 		br_int = Interpolate1D(k, bkrm)
 
-	kg, bg, icov = select_k(k, kmin, kmax, bkrm, br)
+	kg, bg, icov, _ = select_k(k, kmin, kmax, bkrm, br)
 
 	def model(kg, theta):
-		return br_int(theta[0]*kg) + theta[1]/kg + theta[2] + theta[3]*kg
+		return theta[1]*br_int(theta[0]*kg) #+ theta[1]/kg + theta[2] + theta[3]*kg
 
 	ps = Posterior(model, bg, icov, kg)
 	def logpost(param):
@@ -339,7 +320,7 @@ def run_mcmc():
 	def nlogpost(param):
 		return -1.*ps.logpost(param)
 
-	res = minimize(nlogpost, [0.0, 0.0, 0.0, 0.0], method='Powell')
+	res = minimize(nlogpost, initial_guess, method='Powell')
 	print(f"Scipy optimizer: {res}")
 	# Initial positions of the walkers.
 	start = res.x + 1.0e-2*np.random.randn(nwalkers, ndim)
@@ -373,7 +354,12 @@ def run_mcmc():
                     '#params':ndim})
 
 
+def run_mcmc2():
+	for kmax_ in np.arange(0.195, 0.055, -0.01):
+		run_mcmc(kmax_)
+
+
 if __name__ == '__main__':
-	run_chi2()
+	#run_chi2()
 	#run_alpha1d()
-	#run_mcmc()
+	run_mcmc2()
