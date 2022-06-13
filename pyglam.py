@@ -450,21 +450,19 @@ def run_dbda():
 	else:
 		br_int = Interpolate1D(k, bkrm)
 
-	kg, bg, icov, _, cov = select_k(k, kmin, kmax, bkrm, br, True)
 	alpha = 1.0001
-	dbda = (br_int(alpha*kg)-bg)/(alpha-1.0)
-	y_ = dbda**2./np.diag(cov)
-
-	kmax_range =np.arange(0.005, 0.295, 0.010)
+	kmax_range =np.arange(0.025, 0.295, 0.010)
 	y = []
 	for kmax_ in kmax_range:
-		if is_bk:
-			y.append( (y_[kg[:, 2] < kmax_]).sum() )
-		else:
-			y.append( (y_[kg < kmax_]).sum() )
+		kg, bg, icov, _, cov = select_k(k, kmin, kmax_, bkrm, br, True)			
+		dbda = (br_int(alpha*kg)-bg)/(alpha-1.0)
+		y_ = dbda**2./np.diag(cov)		
+		y.append( (y_).sum() )
 
 	y = np.array(y)
-	y[y<0] = 0.0
+	is_neg = y < 0.0
+	y[is_neg] = 0.0
+	print(is_neg.mean())
 
 	plt.figure()
 	plt.plot(kmax_range, y, 'k-')
