@@ -453,10 +453,17 @@ def run_dbda():
 	kg, bg, icov, _, cov = select_k(k, kmin, kmax, bkrm, br, True)
 	alpha = 1.0001
 	dbda = (br_int(alpha*kg)-bg)/(alpha-1.0)
-	y = dbda**2./np.diag(cov)
+	y_ = dbda**2./np.diag(cov)
+
+	kmax_range =np.arange(0.005, 0.295, 0.010)
+	y = []
+	for kmax_ in kmax_range:
+		y.append( (y_[kg[:, 2] < kmax_]).sum() )	
+	y = np.array(y)
 
 	plt.figure()
-	plt.plot(y, 'k-')
+	plt.plot(kmax_range, y, 'k-')
+	plt.xlabel('kmax range')
 	plt.savefig(f'dbdk_{is_bk}.png', dpi=300, bbox_inches='tight')
 
 
