@@ -1,6 +1,9 @@
 """
     Code to process Bispectrum data
 
+
+	todo: depending on how we fill the unobserved elements of the bispectrum array
+	we get different chi2 values, zeros or NaNs with 11D pandas interpolation
 """
 import sys
 import os
@@ -11,7 +14,7 @@ import emcee
 
 from glob import glob
 from scipy.interpolate import RegularGridInterpolator as rgi
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, LinearNDInterpolator
 from scipy.optimize import minimize
 from multiprocessing import cpu_count
 from multiprocessing.pool import ThreadPool as Pool
@@ -21,8 +24,8 @@ from multiprocessing.pool import ThreadPool as Pool
 mpl.use('Agg') 
 
 #--- input parameters ---
-is_bk = 1
-w_hart = 1
+is_bk = int(sys.argv[1])
+w_hart = 0
 npts = 1000001
 ixmax = 1000                        # maximum mock index
 KMIN, KMAX = 0.004, 0.296            # for applying a cut on k, to reduce the cov matrix dimension
@@ -102,6 +105,18 @@ def read(bkr_file): # read bispectrum ratio file and return mean and cov matrix
 
 
 class Interpolate3D(object):
+    """ Interpolater for B(k1, k2, k3). Uses symmetry to fill the 3D matrix of B
+    """
+    def __init__(self, k, br):
+        self.br3d_int = LinearNDInterpolator(k, br)
+
+    def __call__(self, *arrays):
+        return self.br3d_int(*arrays)
+
+
+
+
+class Interpolate3DOld(object):
 	""" Interpolater for B(k1, k2, k3). Uses symmetry to fill the 3D matrix of B
 	"""
 	def __init__(self, k, br):
@@ -110,9 +125,9 @@ class Interpolate3D(object):
 		kmin = min(k[:, 2])
 		nk = int((kmax-kmin)/dk) + 1
 		kg = np.arange(kmin, kmax+dk/2, dk)
-		#print(f'kmin={kmin:.3f}, kmax={kmax:.3f}, dk={dk:.3f}, nk={nk:d}')
-		br3d = np.zeros((nk, nk, nk))#*np.nan
-		#print(f'initialized 3D B(k): {br3d.shape} with k-grid = {kg}:')
+		print(f'kmin={kmin:.3f}, kmax={kmax:.3f}, dk={dk:.3f}, nk={nk:d}')
+		br3d = np.zeros((nk, nk, nk)) #*np.nan
+		print(f'initialized 3D B(k): {br3d.shape} with k-grid = {kg}:')
 		for ki in range(k.shape[0]):
 			i = int((k[ki, 0]-kmin)/dk)
 			j = int((k[ki, 1]-kmin)/dk)
@@ -124,9 +139,9 @@ class Interpolate3D(object):
 			br3d[l, j, i] = br[ki]
 			br3d[l, i, j] = br[ki]
 
-		self.br3d_int = rgi((kg, kg, kg), br3d, 
-		                    method='linear', bounds_error=False, fill_value=10.) # turn this to True to see the error
-		self.kg = kg
+		kw = dict(method="linear",bounds_error=False,fill_value=None) # fill_value=10.
+		self.br3d_int = rgi((kg, kg, kg), br3d, **kw) # turn this to True to see the error
+		#self.kg = kg
 
 	def __call__(self, *arrays):
 		return self.br3d_int(*arrays)
@@ -147,7 +162,7 @@ class Interpolate1D(object):
 		return self.br3d_int(array)
 
 
-def select_k(k, kmin, kmax, bkrm, br):
+def select_k(k, kmin, kmax, bkrm, br, return_cov=False):
 	# apply cut on k
 	is_good = np.ones(k.shape[0], '?')
 	if is_bk:
@@ -163,7 +178,10 @@ def select_k(k, kmin, kmax, bkrm, br):
 	if w_hart:
 	    cov = cov*hartlapf
 	icov = np.linalg.inv(cov)
-	return kg, bg, icov, hartlapf
+	ret = (kg, bg, icov, hartlapf)
+	if return_cov:
+		ret += (cov, )
+	return ret
 
 
 
@@ -230,6 +248,31 @@ def run_alpha1d():
 	#print(f'wrote {alphas_file}')
 
 
+def run_chi2one():
+
+	# read the ratio of bispectra and ratio of means
+	k, br, bkrm = read(bkr_file)
+	print(f'# k shape: {k.shape}')
+	print(f'# br shape: {br.shape}')
+	print(f'# bkrm shape: {bkrm.shape}')
+
+	if is_bk:
+		# fill in the 3D matrix
+		br_int = Interpolate3D(k, bkrm)
+	else:
+		br_int = Interpolate1D(k, bkrm)
+
+	print("#kmax    sigma    hartlap")
+	kmax = 0.085 
+	kmin = 0.005
+	alpha = 1.01
+	# apply cut on k
+	kg, bg, icov, hf = select_k(k, kmin, kmax, bkrm, br)
+	res  = bg - br_int(alpha*kg)
+	chi2 = res.dot(icov.dot(res))
+	print(chi2)
+
+
 def run_chi2():
 
 	# read the ratio of bispectra and ratio of means
@@ -249,6 +292,35 @@ def run_chi2():
 	sig_, hf_ = get_alpha1sig(k, bkrm, br, br_int, kmax=kmax_, kmin=0.005, print_chi2=True)
 	#print(f'{kmax_:.3f} {sig_:.6f} {hf_:.6f}')
 
+    
+def run_alpha_chi2():
+
+    # read the ratio of bispectra and ratio of means
+    k, br, bkrm = read(bkr_file)
+    print(f'# k shape: {k.shape}')
+    print(f'# br shape: {br.shape}')
+    print(f'# bkrm shape: {bkrm.shape}')
+
+    if is_bk:
+        # fill in the 3D matrix
+        br_int = Interpolate3D(k, bkrm)
+    else:
+        br_int = Interpolate1D(k, bkrm)
+
+    print(f"#alpha  chi2  hartlap={w_hart}")
+    kmax_ = 0.085 
+    kmin_ = 0.005
+    # apply cut on k
+    kg, bg, icov, hf = select_k(k, kmin_, kmax_, bkrm, br)
+
+    alphas = [0.9, 0.95, 0.98, 0.99, 1., 1.01, 1.02, 1.05, 1.10] #np.arange(1.000, 1.100, 0.010)
+    chi2s = []
+    for alpha in alphas:
+        res  = bg - br_int(alpha*kg)
+        chi2 = res.dot(icov.dot(res))
+        print(f'{alpha:.2f}, {chi2:.6f}')
+
+    
 
 class Posterior:
     """ Log Posterior for Glam
@@ -263,9 +335,8 @@ class Posterior:
         ''' The natural logarithm of the prior probability. '''
         lp = 0.
         # set prior to 1 (log prior to 0) if in the range and zero (-inf) outside the range
-        a, b = theta
-        lp += 0. if 0.8 < a < 1.2 else -np.inf
-        for param in [b, ]:
+        lp += 0. if 0.8 < theta[0] < 1.2 else -np.inf
+        for param in theta[1:]:
 	        lp += 0. if -2. < param < 2. else -np.inf
         
         ## Gaussian prior on ?
@@ -290,11 +361,11 @@ class Posterior:
 
 def run_mcmc(kmax=0.085):
 	kmin = 0.005
-	ndim = 2
+	ndim = 6
 	nwalkers = 30
 	nsteps = 10000
 	initial_guess = [0.0 for i in range(ndim)]
-	mcmc_file = f'/mnt/data1/BispectrumGLAM/output/{name_tag}_ht_{w_hart}_mcmc_kmax{kmax:.3f}.npz'
+	mcmc_file = f'/mnt/data1/BispectrumGLAM/output/{name_tag}_ht_{w_hart}_mcmc_kmax{kmax:.3f}_v2.npz'
 	print(mcmc_file)	
 	
 	# read the ratio of bispectra and ratio of means
@@ -311,8 +382,13 @@ def run_mcmc(kmax=0.085):
 
 	kg, bg, icov, _ = select_k(k, kmin, kmax, bkrm, br)
 
-	def model(kg, theta):
-		return theta[1]*br_int(theta[0]*kg) #+ theta[1]/kg + theta[2] + theta[3]*kg
+	if is_bk:
+		def model(kg, theta):
+			return theta[1]*br_int(theta[0]*kg) + theta[2] + theta[3]*(1./kg[:, 0]+1./kg[:, 1]+1./kg[:, 2]) \
+			       + theta[4]*(kg[:, 0]+kg[:, 1]+kg[:, 2]) + theta[5]*(kg[:, 0]+kg[:, 1]+kg[:, 2])*(kg[:, 0]+kg[:, 1]+kg[:, 2])
+	else:
+		def model(kg, theta):
+			return theta[1]*br_int(theta[0]*kg) + theta[2] + theta[3]/kg + theta[4]*kg + theta[5]*kg*kg
 
 	ps = Posterior(model, bg, icov, kg)
 	def logpost(param):
@@ -359,7 +435,35 @@ def run_mcmc2():
 		run_mcmc(kmax_)
 
 
+def run_dbda():
+	kmin = KMIN
+	kmax = KMAX
+	# read the ratio of bispectra and ratio of means
+	k, br, bkrm = read(bkr_file)
+	print(f'k shape: {k.shape}')
+	print(f'br shape: {br.shape}')
+	print(f'bkrm shape: {bkrm.shape}')
+
+	if is_bk:
+		# fill in the 3D matrix
+		br_int = Interpolate3D(k, bkrm)
+	else:
+		br_int = Interpolate1D(k, bkrm)
+
+	kg, bg, icov, _, cov = select_k(k, kmin, kmax, bkrm, br, True)
+	alpha = 1.0001
+	dbda = (br_int(alpha*kg)-bg)/(alpha-1.0)
+	y = dbda**2./np.diag(cov)
+
+	plt.figure()
+	plt.plot(y, 'k-')
+	plt.savefig(f'dbdk_{is_bk}.png', dpi=300, bbox_inches='tight')
+
+
 if __name__ == '__main__':
+	#run_chi2one()
 	#run_chi2()
 	#run_alpha1d()
-	run_mcmc2()
+	#run_mcmc2()
+    #run_alpha_chi2()
+	run_dbda()
