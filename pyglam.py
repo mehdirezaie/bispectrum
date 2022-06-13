@@ -458,7 +458,11 @@ def run_dbda():
 	kmax_range =np.arange(0.005, 0.295, 0.010)
 	y = []
 	for kmax_ in kmax_range:
-		y.append( (y_[kg[:, 2] < kmax_]).sum() )	
+		if is_bk:
+			y.append( (y_[kg[:, 2] < kmax_]).sum() )
+		else:
+			y.append( (y_[kg < kmax_]).sum() )
+
 	y = np.array(y)
 
 	plt.figure()
