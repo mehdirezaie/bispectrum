@@ -25,7 +25,7 @@ mpl.use('Agg')
 
 #--- input parameters ---
 is_bk = int(sys.argv[1])
-w_hart = 0
+w_hart = 1
 npts = 1000001
 ixmax = 1000                        # maximum mock index
 KMIN, KMAX = 0.004, 0.296            # for applying a cut on k, to reduce the cov matrix dimension
@@ -464,11 +464,12 @@ def run_dbda():
 			y.append( (y_[kg < kmax_]).sum() )
 
 	y = np.array(y)
+	y[y<0] = 0.0
 
 	plt.figure()
 	plt.plot(kmax_range, y, 'k-')
 	plt.xlabel('kmax range')
-	plt.savefig(f'dbdk_{is_bk}.png', dpi=300, bbox_inches='tight')
+	plt.savefig(f'dbdk_{is_bk}_{w_hart}.png', dpi=300, bbox_inches='tight')
 
 
 if __name__ == '__main__':
