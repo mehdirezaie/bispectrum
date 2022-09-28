@@ -10,13 +10,13 @@ from helpers import (read_molino_bk, read_molino_pk,
                      read_glam_pk, read_glam_bk,
                      read_glam_bk_nobao, read_glam_pk_nobao, 
                      savez)
-from helpers import PkModel, BkModel, logprior, get_cov
+from helpers import PkModelConst, BkModelConst, logpriorconst, get_cov
 
 
 os.environ["OMP_NUM_THREADS"] = "1"
 
 def run(kmax, mcmc_file, progress=True):
-    ndim = 17 # 11 + 6
+    ndim = 5 # 3+2
     nwalkers = ndim*2
     nsteps = 10000
     kmin = 0.015
@@ -48,8 +48,8 @@ def run(kmax, mcmc_file, progress=True):
 
     y_c = np.concatenate([b0_mol, p0_mol], axis=1)
 
-    pk_int = PkModel(kp, rp_m)
-    bk_int = BkModel(kb, rb_m)
+    pk_int = PkModelConst(kp, rp_m)
+    bk_int = BkModelConst(kb, rb_m)
 
     good_p = (kp > kmin) & (kp < kmax)
     good_b_ = (kb > kmin) & (kb < kmax)
@@ -61,8 +61,8 @@ def run(kmax, mcmc_file, progress=True):
 
     def loglike(theta):
         theta = theta.tolist()
-        theta1 = theta[:11]
-        theta2 = theta[11:]
+        theta1 = theta[:3]
+        theta2 = theta[3:]
         theta2.insert(0, theta[0])
         rp_ = pk_int(kp[good_p], theta2)
         rb_ = bk_int(kb[good_b], theta1)
@@ -73,15 +73,12 @@ def run(kmax, mcmc_file, progress=True):
         return -0.5*res.dot(icov[is_ok, :][:, is_ok].dot(res))
 
     def logpost(theta):
-        return logprior(theta) + loglike(theta)
+        return logpriorconst(theta) + loglike(theta)
 
     def nlogpost(theta):
         return -1*logpost(theta)
     
-    guess = np.array([1.001, 1.001, 1.1e-5, 1.2e-5, 1.3e-5, 
-                      1.1e-5, 1.2e-5, 1.3e-5, 1.0e-5, 0.9e-5,
-                      1.1e-5, 1.003, 1.0e-5, 0.9e-5, 1.0e-6,
-                      0.8e-5, 0.9e-5])
+    guess = np.array([1.001, 1.001, 1.1e-5, 1.003, 1.0e-5])
     # res = minimize(nlogpost, initial_guess) #, method='Powell')    
     start = (guess + guess*0.01*np.random.randn(nwalkers, ndim))
     n = 1
@@ -112,7 +109,7 @@ if __name__ == '__main__':
         sys.exit()
 
     kmax_i = kmax[rank]
-    label = 'quad'
+    label = 'const'
     ver   = 'v1.1'
     mcmc_file = f'mcmcs/mcmc_is_joint_kmax_{kmax_i:.2f}_{label}_{ver}.npz'
     

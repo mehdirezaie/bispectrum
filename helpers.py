@@ -30,6 +30,14 @@ class PkModel(object):
                 + params[5]*(x*x) \
                 + params[6]*(1./(x*x))
 
+class PkModelConst(object):
+    
+    def __init__(self, x, y):
+        self.y_int = interp1d(x, y, bounds_error=False, fill_value=np.nan)
+    
+    def __call__(self, x, params): # 7 params
+        return params[1]*self.y_int(params[0]*x) + params[2]
+
 
 class BkModel(object):
     def __init__(self, x, y):
@@ -46,6 +54,12 @@ class BkModel(object):
                 + params[9]*(x[:, 0]*x[:, 1]/x[:, 2] + x[:, 0]*x[:, 2]/x[:, 1] + x[:, 1]*x[:, 2]/x[:, 0]) \
                 + params[10]*(x[:, 2]/(x[:, 0]*x[:, 1]) + x[:, 1]/(x[:, 0]*x[:, 2]) + x[:, 0]/(x[:, 1]*x[:, 2]))
     
+class BkModelConst(object):
+    def __init__(self, x, y):
+        self.y_int = LinearNDInterpolator(x, y, fill_value=np.nan)
+    
+    def __call__(self, x, params): # 11 params
+        return params[1]*self.y_int(params[0]*x) + params[2]
 
 def get_cov(y_molino, y_glam, plot=False):
     
@@ -87,12 +101,42 @@ def logprior(theta):
     lp += 0. if -0.01 < theta[15] < 0.01 else -np.inf
     lp += 0. if -0.01 < theta[16] < 0.01 else -np.inf
     
-    ## Gaussian prior on ?
-    #mmu = 3.     # mean of the Gaussian prior
-    #msigma = 10. # standard deviation of the Gaussian prior
-    #lp += -0.5*((m - mmu)/msigma)**2
-
     return lp 
+
+def logpriorconst(theta):
+    ''' The natural logarithm of the prior probability. '''
+    lp = 0.
+    lp += 0. if  0.9 < theta[0] < 1.1 else -np.inf
+    lp += 0. if  0.8 < theta[1] < 1.2 else -np.inf
+    
+    lp += 0. if -0.01 < theta[2]  < 0.01 else -np.inf
+    lp += 0. if  0.8  < theta[3] < 1.2   else -np.inf
+    lp += 0. if -0.01 < theta[4] < 0.01 else -np.inf
+    
+    return lp 
+
+
+def logpriorpk(theta):
+    ''' The natural logarithm of the prior probability. '''
+    lp = 0.
+    lp += 0. if  0.9 < theta[0] < 1.1 else -np.inf
+    lp += 0. if  0.8 < theta[1] < 1.2 else -np.inf 
+    lp += 0. if -0.01 < theta[2]  < 0.01 else -np.inf
+    lp += 0. if -0.01 < theta[3]  < 0.01 else -np.inf
+    lp += 0. if -0.01 < theta[4]  < 0.01 else -np.inf
+    lp += 0. if -0.01 < theta[5]  < 0.01 else -np.inf
+    lp += 0. if -0.01 < theta[6]  < 0.01 else -np.inf
+    
+    return lp 
+
+def logpriorpkconst(theta):
+    ''' The natural logarithm of the prior probability. '''
+    lp = 0.
+    lp += 0. if  0.9 < theta[0] < 1.1 else -np.inf
+    lp += 0. if  0.8 < theta[1] < 1.2 else -np.inf 
+    lp += 0. if -0.01 < theta[2]  < 0.01 else -np.inf
+    return lp 
+
 
 
 def savez(output_file, **kwargs): 
