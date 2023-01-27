@@ -10,7 +10,7 @@ from helpers import (read_molino_bk, read_molino_pk,
                      read_glam_pk, read_glam_bk,
                      read_glam_bk_nobao, read_glam_pk_nobao, 
                      savez)
-from helpers import PkModel, BkModel, logprior, get_cov
+from helpers import PkModelnoBAO, BkModelnoBAO, logprior, get_cov
 
 
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -48,8 +48,8 @@ def run(kmax, mcmc_file, progress=True):
 
     y_c = np.concatenate([b0_mol, p0_mol], axis=1)
 
-    pk_int = PkModel(kp, np.ones_like(rp_m))
-    bk_int = BkModel(kb, np.ones_like(rb_m))
+    pk_int = PkModelnoBAO(kp, np.ones_like(rp_m))
+    bk_int = BkModelnoBAO(kb, np.ones_like(rb_m))
 
     good_p = (kp > kmin) & (kp < kmax)
     good_b_ = (kb > kmin) & (kb < kmax)
@@ -113,7 +113,7 @@ if __name__ == '__main__':
 
     kmax_i = kmax[rank]
     label = 'quadnobao'
-    ver   = 'v1.1'
+    ver   = 'v1.2' # 1.1 is with interpolating one
     mcmc_file = f'mcmcs/mcmc_is_joint_kmax_{kmax_i:.2f}_{label}_{ver}.npz'
     
     run(kmax_i, mcmc_file, progress=rank==0)

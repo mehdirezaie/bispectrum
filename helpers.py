@@ -348,6 +348,18 @@ class PkModel(object):
                 + params[5]*(x*x) \
                 + params[6]*(1./(x*x))
     
+    
+class PkModelnoBAO(object):
+    
+    def __init__(self, x, y):
+        pass
+    def __call__(self, x, params): # 7 params
+        return params[2] \
+                + params[3]*x \
+                + params[4]*(1./x) \
+                + params[5]*(x*x) \
+                + params[6]*(1./(x*x))    
+    
 
 class PkModelConst(object):
     
@@ -372,6 +384,22 @@ class BkModel(object):
                 + params[8]*(1./(x[:, 0]*x[:, 1]) + 1./(x[:, 0]*x[:, 2]) + 1./(x[:, 1]*x[:, 2])) \
                 + params[9]*(x[:, 0]*x[:, 1]/x[:, 2] + x[:, 0]*x[:, 2]/x[:, 1] + x[:, 1]*x[:, 2]/x[:, 0]) \
                 + params[10]*(x[:, 2]/(x[:, 0]*x[:, 1]) + x[:, 1]/(x[:, 0]*x[:, 2]) + x[:, 0]/(x[:, 1]*x[:, 2]))
+    
+class BkModelnoBAO(object):
+    def __init__(self, x, y):
+        pass 
+
+    def __call__(self, x, params): # 11 params
+        return params[2] \
+                + params[3]*(x[:, 0] + x[:, 1] + x[:, 2]) \
+                + params[4]*(1./x[:, 0] + 1./x[:, 1] + 1/x[:, 2]) \
+                + params[5]*(x[:, 0]**2 + x[:, 1]**2 + x[:, 2]**2) \
+                + params[6]*(1./x[:, 0]**2 + 1./x[:, 1]**2 + 1./x[:, 2]**2) \
+                + params[7]*(x[:, 0]*x[:, 1] + x[:, 0]*x[:, 2] + x[:, 1]*x[:, 2]) \
+                + params[8]*(1./(x[:, 0]*x[:, 1]) + 1./(x[:, 0]*x[:, 2]) + 1./(x[:, 1]*x[:, 2])) \
+                + params[9]*(x[:, 0]*x[:, 1]/x[:, 2] + x[:, 0]*x[:, 2]/x[:, 1] + x[:, 1]*x[:, 2]/x[:, 0]) \
+                + params[10]*(x[:, 2]/(x[:, 0]*x[:, 1]) + x[:, 1]/(x[:, 0]*x[:, 2]) + x[:, 0]/(x[:, 1]*x[:, 2]))    
+    
     
 class BkModelConst(object):
     def __init__(self, x, y):
@@ -500,6 +528,7 @@ def plot_spectra():
     
     
 def plot_ratios():
+    vratio = 8.0
     path4figs_ = os.path.join(path4figs, 'glam_abacus_molino_ratio.pdf')
     
     bk_g = read_glam_bk()
@@ -516,22 +545,45 @@ def plot_ratios():
     cov_ba = np.cov(bk_a['pk'][:, :, 0], rowvar=0)
     cov_pa = np.cov(pk_a['pk'][:, :, 0], rowvar=0)
 
-    fig, (ax1,ax2) = plt.subplots(nrows=2, figsize=(5, 6), sharex=True, sharey=True)
+    fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(12, 12), sharex='col', sharey='col')
     fig.subplots_adjust(hspace=0.02)
+    ax = ax.flatten()
     
-    ax1.plot(cov_pg.diagonal()/cov_pm.diagonal(), alpha=0.8, lw=3)
-    ax1.plot((pk_g['pk'].mean(axis=0)/pk_m['pk'][:, :, 0].mean(axis=0)), ls='-', alpha=0.8, lw=1)
-    ax1.set(yscale='log')
-    ax1.legend(title='Glam/Molino', frameon=False)
+    ax[0].plot(cov_pg.diagonal()/cov_pm.diagonal(), alpha=0.8, lw=3)
+    ax[0].plot((pk_g['pk'].mean(axis=0)/pk_m['pk'][:, :, 0].mean(axis=0))**2, ls='-', alpha=0.8, lw=1)
+    ax[0].set(yscale='log')
+    ax[0].legend(title='Glam/Molino', frameon=False)
     #lgnd = ax1.legend(title='Glam/Molino', frameon=False, fontsize=12)
     #for i, tx in enumerate(lgnd.get_texts()):tx.set_color('C%d'%i)
-    ax1.text(10, 3000., 'ratio of cov', color='C0')
-    ax1.text(10, 50., 'ratio of amplitudes', color='C1')
+    ax[0].text(10, 3000., 'ratio of cov', color='C0')
+    ax[0].text(10, 700., 'ratio of amplitudes^2', color='C1')
 
-    ax2.plot(cov_pa.diagonal()/cov_pm.diagonal(), lw=3, alpha=0.8)
-    ax2.plot((pk_a['pk'][:, :, 0].mean(axis=0)/pk_m['pk'][:, :, 0].mean(axis=0)), ls='-', alpha=0.8, lw=1)
-    ax2.set(yscale='log', xlabel='k-bin index')
-    ax2.legend(title='Abacus/Molino', frameon=False) 
+    ax[2].plot(cov_pa.diagonal()/cov_pm.diagonal(), lw=3, alpha=0.8)
+    ax[2].plot((pk_a['pk'][:, :, 0].mean(axis=0)/pk_m['pk'][:, :, 0].mean(axis=0))**2/vratio, ls='-', alpha=0.8, lw=1)
+    ax[2].set(yscale='log', xlabel='k-bin index')
+    ax[2].legend(title='Abacus/Molino', frameon=False) 
+    
+    
+    ax[1].plot(cov_bg.diagonal()/cov_bm.diagonal(), alpha=0.8, lw=3)
+    ax[1].plot((bk_g['pk'].mean(axis=0)/bk_m['pk'][:, :, 0].mean(axis=0))**3, ls='-', alpha=0.8, lw=1)
+    ax[1].set(yscale='log')
+    ax[1].legend(title='Glam/Molino', frameon=False)
+    #lgnd = ax1.legend(title='Glam/Molino', frameon=False, fontsize=12)
+    #for i, tx in enumerate(lgnd.get_texts()):tx.set_color('C%d'%i)
+    #ax[1].text(10, 3000., 'ratio of cov', color='C0')
+    #ax[1].text(10, 50., 'ratio of amplitudes', color='C1')
+    ax[1].text(10, 1000., 'ratio of amplitudes^3', color='C1')
+
+    ax[3].plot(cov_ba.diagonal()/cov_bm.diagonal(), lw=3, alpha=0.8)
+    ax[3].plot((bk_a['pk'][:, :, 0].mean(axis=0)/bk_m['pk'][:, :, 0].mean(axis=0))**3/vratio**4.0, ls='-', alpha=0.8, lw=1)
+    ax[3].set(yscale='log', xlabel='k-bin index')
+    ax[3].legend(title='Abacus/Molino', frameon=False)     
+    
+    for i, axi in enumerate(ax):
+        if i%2==0:
+            axi.set_ylabel('Power Spectrum Ratio')
+        else:
+            axi.set_ylabel('Bispectrum Ratio')
     fig.savefig(path4figs_) 
     
 
