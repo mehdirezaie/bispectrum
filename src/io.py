@@ -88,4 +88,61 @@ class DataLoader:
         print(y.shape)
         return (x, y)
     
+    def prep_data(self):
+
+        from .stats import get_p3
+
+        k, pk_glam = self.load('glam_pk_bao', 1)
+        __, pk_glam_nobao = self.load('glam_pk_nobao', 1)
+        __, pk_molino = self.load('molino_pk', 1)
+        __, pk_abacus = self.load('abacus_pk', 1)
+        __, pk_abacus_nobao = self.load('abacus_pk_nobao', 2)
+
+        k3, bk_glam = self.load('glam_bk_bao', 3)
+        __, bk_glam_nobao = self.load('glam_bk_nobao', 3)
+        __, bk_molino = self.load('molino_bk', 3)
+        __, bk_abacus = self.load('abacus_bk', 3)
+        __, bk_abacus_nobao = self.load('abacus_bk_nobao', 4)
+
+        p3_abacus = get_p3(k3, pk_abacus.mean(axis=0))
+        p3_molino = get_p3(k3, pk_molino.mean(axis=0))
+        p3_glam   = get_p3(k3, pk_glam.mean(axis=0))
+        
+        cov_p     = np.cov(pk_molino, rowvar=False)/(pk_molino.var(axis=0)/pk_molino.mean(axis=0)**2)
+        Cp_glam   = (pk_glam.var(axis=0)/pk_glam.mean(axis=0)**2) * cov_p
+        Cp_abacus = (pk_abacus.var(axis=0)/pk_abacus.mean(axis=0)**2*8**1.5) * cov_p
+        
+        cov_b     = np.cov(bk_molino, rowvar=False) / (bk_molino.var(axis=0)/p3_molino)
+        Cb_glam   = (bk_glam.var(axis=0)/p3_glam)*cov_b
+        Cb_abacus = (bk_abacus.var(axis=0)/p3_abacus*8**1.5)*cov_b
+        
+        # ABACUS
+        np.savez('cache/bk_cov_abacus_bao.npz', **{'x':k3, 'y':Cb_abacus})        
+        np.savez('cache/bk_mean_abacus_bao.npz', **{'x':k3, 'y':bk_abacus.mean(axis=0)})
+        np.savez('cache/bk_mean_abacus_nobao.npz', **{'x':k3, 'y':bk_abacus_nobao.mean(axis=0)})
+        np.savez('cache/pk_cov_abacus_bao.npz', **{'x':k, 'y':Cp_abacus})                
+        np.savez('cache/pk_mean_abacus_bao.npz', **{'x':k, 'y':pk_abacus.mean(axis=0)})
+        np.savez('cache/pk_mean_abacus_nobao.npz', **{'x':k, 'y':pk_abacus_nobao.mean(axis=0)})
+        np.savez('cache/pk3_mean_abacus_bao.npz', **{'x':k3, 'y':p3_abacus})
+
+        # GLAM
+        np.savez('cache/bk_cov_glam_bao.npz', **{'x':k3, 'y':Cb_glam})                
+        np.savez('cache/bk_mean_glam_bao.npz', **{'x':k3, 'y':bk_glam.mean(axis=0)})
+        np.savez('cache/bk_mean_glam_nobao.npz', **{'x':k3, 'y':bk_glam_nobao.mean(axis=0)})
+        np.savez('cache/pk_cov_glam_bao.npz', **{'x':k, 'y':Cp_glam})                
+        np.savez('cache/pk_mean_glam_bao.npz', **{'x':k, 'y':pk_glam.mean(axis=0)})
+        np.savez('cache/pk_mean_glam_nobao.npz', **{'x':k, 'y':pk_glam_nobao.mean(axis=0)})
+        np.savez('cache/pk3_mean_glam_bao.npz', **{'x':k3, 'y':p3_glam})
+        
+        # MOLINO
+        np.savez('cache/bk_mean_molino_bao.npz', **{'x':k3, 'y':bk_molino.mean(axis=0)})
+        np.savez('cache/pk_mean_molino_bao.npz', **{'x':k, 'y':pk_molino.mean(axis=0)})
+        np.savez('cache/pk3_mean_molino_bao.npz', **{'x':k3, 'y':p3_molino})
+        print('data is prepared')
     
+    
+class Spectrum:
+    def __init__(self, filename):
+        file = np.load(filename)
+        self.x = file['x']
+        self.y = file['y']    
