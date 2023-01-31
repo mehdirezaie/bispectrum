@@ -1,10 +1,14 @@
 import numpy as np
 
-def get_cov(y):
+def get_cov(y, y_):
+
     cov_ = np.cov(y, rowvar=0)
     std_ = np.diagonal(cov_)**0.5
-    rcov = cov_ / np.outer(std_, std_)
-    return rcov
+    rcov = cov_ / np.outer(std_, std_)    
+    
+    std  = np.std(y_, axis=0)
+    return rcov * np.outer(std, std)
+
 
 def get_p3(k3, pk_a):
     

@@ -90,7 +90,7 @@ class DataLoader:
     
     def prep_data(self):
 
-        from .stats import get_p3
+        from .stats import get_p3, get_cov
 
         k, pk_glam = self.load('glam_pk_bao', 1)
         __, pk_glam_nobao = self.load('glam_pk_nobao', 1)
@@ -108,13 +108,17 @@ class DataLoader:
         p3_molino = get_p3(k3, pk_molino.mean(axis=0))
         p3_glam   = get_p3(k3, pk_glam.mean(axis=0))
         
-        cov_p     = np.cov(pk_molino, rowvar=False)/(pk_molino.var(axis=0)/pk_molino.mean(axis=0)**2)
-        Cp_glam   = (pk_glam.var(axis=0)/pk_glam.mean(axis=0)**2) * cov_p
-        Cp_abacus = (pk_abacus.var(axis=0)/pk_abacus.mean(axis=0)**2*8**1.5) * cov_p
-        
-        cov_b     = np.cov(bk_molino, rowvar=False) / (bk_molino.var(axis=0)/p3_molino)
-        Cb_glam   = (bk_glam.var(axis=0)/p3_glam)*cov_b
-        Cb_abacus = (bk_abacus.var(axis=0)/p3_abacus*8**1.5)*cov_b
+        #cov_p     = np.cov(pk_molino, rowvar=False)/(pk_molino.var(axis=0)/pk_molino.mean(axis=0)**2)
+        #Cp_glam   = (pk_glam.var(axis=0)/pk_glam.mean(axis=0)**2) * cov_p
+        #Cp_abacus = (pk_abacus.var(axis=0)/pk_abacus.mean(axis=0)**2*8**1.5) * cov_p
+        Cp_glam = get_cov(pk_molino, pk_glam/pk_glam_nobao.mean(axis=0))
+        Cp_abacus = get_cov(pk_molino, pk_abacus/pk_abacus_nobao.mean(axis=0))
+
+        #cov_b     = np.cov(bk_molino, rowvar=False) / (bk_molino.var(axis=0)/p3_molino)
+        #Cb_glam   = (bk_glam.var(axis=0)/p3_glam)*cov_b
+        #Cb_abacus = (bk_abacus.var(axis=0)/p3_abacus*8**1.5)*cov_b
+        Cb_glam = get_cov(bk_molino, bk_glam/bk_glam_nobao.mean(axis=0))
+        Cb_abacus = get_cov(bk_molino, bk_abacus/bk_abacus_nobao.mean(axis=0))
         
         # ABACUS
         np.savez('cache/bk_cov_abacus_bao.npz', **{'x':k3, 'y':Cb_abacus})        

@@ -77,7 +77,7 @@ def run_emcee(comm, rank, ns):
         lp += 0. if  0.8 < p[0] < 1.2 else -np.inf
         lp += 0. if  0.5 < p[1] < 2.0 else -np.inf    
         for p_i in p[2:]:
-            lp += 0. if  -0.1 < p_i < 0.1 else -np.inf
+            lp += 0. if  -1000. < p_i < 1000. else -np.inf
         return lp
 
     def logpost(p):
@@ -125,10 +125,10 @@ if __name__ == '__main__':
         ap.add_argument('--stat', default='bk')
         ap.add_argument('--mock', default='glam')
         ap.add_argument('--temp', default='glam')   
-        ap.add_argument('--kmin', type=float, default=0.10)
+        ap.add_argument('--kmin', type=float, default=0.15)
         ap.add_argument('--kmax', type=float, default=0.25)        
         ap.add_argument('--nwalkers', type=int, default=22)
-        ap.add_argument('--nsteps', type=int, default=10000)
+        ap.add_argument('--nsteps', type=int, default=20000)
         ap.add_argument('--output_path', required=True)
         ap.add_argument('-v', '--verbose', action='store_true', default=False)
         ns = ap.parse_args()        
