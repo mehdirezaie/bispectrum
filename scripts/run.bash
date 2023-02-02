@@ -10,4 +10,5 @@ mock=$1
 temp=$mock
 stat=$2
 
-mpirun -np 11 python mcmc_bispectrum.py --output_path ../mcmc_jan31/ --stat $stat --mock $mock --temp $temp -v
+#mpirun -np 11 python mcmc_bispectrum.py --output_path ../mcmc_jan31/ --stat $stat --mock $mock --temp $temp -v
+mpirun -np 11 python mcmc_bispectrum_joint.py --output_path ../mcmc_jan31/ --mock $mock --temp $temp -v
