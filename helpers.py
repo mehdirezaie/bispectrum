@@ -291,19 +291,7 @@ def read_abacus_pk():
     return ret
 
 
-def gelman_rubin(chain):
-    # chain: #steps, #chain
-    ssq = np.var(chain, axis=0, ddof=1) 
-    W = np.mean(ssq, axis=0)   # within chain var
-    pb = np.mean(chain, axis=0)
-    pbb = np.mean(pb, axis=0)
 
-    n = chain.shape[0]
-    m = chain.shape[1]    
-    B = n / (m - 1) * np.sum((pbb - pb)**2, axis=0) # between chain var
-    var_p = (n - 1) / n * W + 1 / n * B
-    rhat = np.sqrt(var_p / W)
-    return rhat
 
 
 def extract_sigma(fl):

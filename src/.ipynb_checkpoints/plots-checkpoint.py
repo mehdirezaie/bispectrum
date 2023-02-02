@@ -1,3 +1,4 @@
+
 import matplotlib.pyplot as plt
 from src.io import path2figs
     
@@ -10,15 +11,16 @@ def plot_spectra(xy_b, xy_p, names):
     for ai in ax:
         ai.tick_params(direction='in', right=True, top=True, which='both', axis='both')
         ai.grid(True, ls=':', alpha=0.3)
-
+    colors = ['#000000', '#db2121']
+    
     for i in range(len(xy_b)):
-        ax[0].plot(*xy_b[i], label=names[i], alpha=0.8)
-        ax[1].plot(*xy_p[i], label=names[i], alpha=0.8)
+        ax[0].plot(*xy_b[i], label=names[i], alpha=0.8, color=colors[i])
+        ax[1].plot(*xy_p[i], label=names[i], alpha=0.8, color=colors[i])
     ax[0].set(ylabel='Bispectrum ratio',     ylim=(0.8, 1.2), xlabel='Triangle index') 
     ax[1].set(ylabel='Power spectrum ratio', ylim=(0.8, 1.2), xlabel='Wavenumber [h/Mpc]')
     lgn = ax[1].legend(frameon=False, fontsize=13)
     for i, txt in enumerate(lgn.get_texts()):
-        txt.set_color('C%d'%i)
+        txt.set_color(colors[i])
     fig.align_labels()
     fig.savefig(f'{path2figs}spectra.pdf', bbox_inches='tight')
     
@@ -36,4 +38,21 @@ def plot_rcov(rcov_p, rcov_b):
     ax[0].set_xlabel('k [h/Mpc]')
     ax[0].set_ylabel('k [h/Mpc]')
     ax[1].set_xlabel('Triangle index')
-    ax[1].set_ylabel('Triangle index')    
+    ax[1].set_ylabel('Triangle index')   
+    
+    
+def plot_chi2(chi2s1, chi2s2, title='Mock'):
+    fg, ax = plt.subplots()
+    nk = len(chi2s2[0])
+    for i, ch in enumerate(chi2s1[1]):
+        ax.plot(*ch, color=plt.cm.Reds(i/nk), label=' ', zorder=-10)    
+    for i, ch in enumerate(chi2s2[1]):
+        ax.plot(*ch, color=plt.cm.Blues(i/nk), label=r'%.2f'%chi2s2[0][i])
+
+    ax.legend(bbox_to_anchor=(1.01, 0.0, 0.3, 1), mode='expand', frameon=False, ncol=2, title=r'$k_{\rm max}$',
+             columnspacing=0.0)
+    ax.text(0.1, 0.8, 'Bispectrum', transform=ax.transAxes, color=plt.cm.Reds(1.0))
+    ax.text(0.05, 0.05, 'Power spectrum', transform=ax.transAxes, color=plt.cm.Blues(1.0))
+    ax.set(xlabel=r'$\alpha$', ylabel=r'$\chi^{2}_{\rm min}$', ylim=(-0.2, 14), xlim=(0.94, 1.06),
+          title=title)   
+    fg.savefig(f'../bisp4desi/figures/chi2_{title}.pdf', bbox_inches='tight')    

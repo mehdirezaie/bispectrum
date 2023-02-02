@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from glob import glob
-
+from scipy.stats import binned_statistic
 
 path2figs = '/home/mr095415/bisp4desi/figures/'
 
@@ -64,6 +64,36 @@ def read(mock, iy):
     elif 'bk' in mock:
         return read_bk(glob(path2mocks[mock]), iy)
 
+def read_sigmas(chains, ialpha=0):
+    
+    kmax = []
+    sigma = []
+    for ch in np.sort(chains):
+        ch_ = np.load(ch)
+        kmax.append(ch_['klim'][1])
+        sigma.append(ch_['chain'][5000:, :, ialpha].std())
+        
+    print(ch_['klim'][0])
+    return kmax, sigma
+
+
+def read_chi2(d):
+    alpha_edge = np.linspace(0.95, 1.05, num=21)
+    x = d['chain'][:, :, 0].flatten()
+    y = -2.*d['log_prob'].flatten()
+
+    ym = binned_statistic(x, y, statistic=np.min, bins=alpha_edge)[0]
+    xm = binned_statistic(x, x, statistic=np.mean, bins=alpha_edge)[0]
+    return xm, ym
+
+def read_chi2list(ds):
+    kmax = []
+    chi2s = []
+    for d_ in ds:
+        di = np.load(d_)
+        kmax.append(di['klim'][1])
+        chi2s.append(read_chi2(di))
+    return kmax, chi2s
 
 
 class DataLoader:

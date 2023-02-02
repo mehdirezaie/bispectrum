@@ -45,7 +45,7 @@ def run_emcee(comm, rank, ns):
 
     # cut k
     is_bk = len(x.shape) > 1
-    kmin = 0.015
+    kmin = 0.03
     kmax_range = np.linspace(ns.kmin, ns.kmax, num=comm.Get_size())[::-1]
     kmax = kmax_range[rank]   
     is_g = (x > kmin) & (x < kmax) 
@@ -99,7 +99,7 @@ def run_emcee(comm, rank, ns):
     #for s in start:
     #    print(logpost(s), loglike(s))
 
-    n = 24
+    n = 2
     with Pool(n) as pool:        
         sampler = emcee.EnsembleSampler(ns.nwalkers, ndim, logpost, pool=pool)
         sampler.run_mcmc(start, ns.nsteps, progress=rank==0)
@@ -128,7 +128,7 @@ if __name__ == '__main__':
         ap.add_argument('--kmin', type=float, default=0.15)
         ap.add_argument('--kmax', type=float, default=0.25)        
         ap.add_argument('--nwalkers', type=int, default=22)
-        ap.add_argument('--nsteps', type=int, default=20000)
+        ap.add_argument('--nsteps', type=int, default=10000)
         ap.add_argument('--output_path', required=True)
         ap.add_argument('-v', '--verbose', action='store_true', default=False)
         ns = ap.parse_args()        
