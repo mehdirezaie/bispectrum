@@ -8,8 +8,9 @@ export PYTHONPATH=/home/mr095415/bispectrum
 # 
 mock=$1
 temp=$mock
-stat=$2
+gal=$2
+stat=$3
 
-#mpirun -np 11 python mcmc_bispectrum.py --output_path ../mcmc_jan31/ --stat $stat --mock $mock --temp $temp -v
-#mpirun -np 11 python mcmc_bispectrum_joint.py --output_path ../mcmc_jan31/ --mock $mock --temp $temp -v
-mpirun -np 11 python mcmc_bispectrum_nobaojoint.py --output_path ../mcmc_jan31/ --mock $mock --temp $temp -v
+mpirun -np 11 python mcmc_bispectrum.py --output_path ../mcmc_feb27/ --stat $stat --mock $mock --temp $temp --gal $gal -v
+#mpirun -np 11 python mcmc_bispectrum_joint.py --output_path ../mcmc_feb27/ --stat $stat --mock $mock --temp $temp --gal $gal -v
+#mpirun -np 11 python mcmc_bispectrum_nobaojoint.py --output_path ../mcmc_feb27/ --stat $stat --mock $mock --temp $temp --gal $gal -v

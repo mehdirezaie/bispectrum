@@ -10,7 +10,7 @@ from multiprocessing.pool import ThreadPool as Pool
 
 from scipy.optimize import minimize
 from src.models import PowerSpectrum, BiSpectrum
-from src.io import Spectrum       
+from src.io import Spectrum, path2cache
     
 
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -19,10 +19,10 @@ os.environ["OMP_NUM_THREADS"] = "1"
 def run_emcee(comm, rank, ns):
     if rank==0:
         for k,v in ns.__dict__.items():print(f'{k:15s} : {v}')
-
-        y = Spectrum(f'../cache/{ns.stat}_mean_{ns.mock}_bao.npz')
-        ys = Spectrum(f'../cache/{ns.stat}_mean_{ns.mock}_nobao.npz')
-        cov = Spectrum(f'../cache/{ns.stat}_cov_{ns.mock}_bao.npz')
+        
+        y = Spectrum(path2cache(ns.mock, ns.gal, ns.stat+'mean'))
+        ys = Spectrum(path2cache(ns.mock, ns.gal, ns.stat+'smoothmean'))
+        cov = Spectrum(path2cache(ns.mock, ns.gal, ns.stat+'cov'))
         
         x = y.x
         r = y.y/ys.y
@@ -104,7 +104,7 @@ def run_emcee(comm, rank, ns):
         sampler = emcee.EnsembleSampler(ns.nwalkers, ndim, logpost, pool=pool)
         sampler.run_mcmc(start, ns.nsteps, progress=rank==0)
     
-    filename = f"{ns.stat}_{ns.mock}_{ns.temp}_{kmin:.3f}_{kmax:.3f}.npz"
+    filename = f"{ns.stat}_{ns.mock}_{ns.gal}_{ns.temp}_{kmin:.3f}_{kmax:.3f}.npz"
     output = os.path.join(ns.output_path, filename)
     np.savez(output, **{'chain':sampler.get_chain(), 
                         'log_prob':sampler.get_log_prob(),
@@ -125,6 +125,7 @@ if __name__ == '__main__':
         ap.add_argument('--stat', default='bk')
         ap.add_argument('--mock', default='glam')
         ap.add_argument('--temp', default='glam')   
+        ap.add_argument('--gal', default='gal')   
         ap.add_argument('--kmin', type=float, default=0.15)
         ap.add_argument('--kmax', type=float, default=0.25)        
         ap.add_argument('--nwalkers', type=int, default=22)

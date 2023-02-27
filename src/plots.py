@@ -14,8 +14,8 @@ def plot_spectra(xy_b, xy_p, names):
     colors = ['#000000', '#db2121']
     
     for i in range(len(xy_b)):
-        ax[0].plot(*xy_b[i], label=names[i], alpha=0.8, color=colors[i])
-        ax[1].plot(*xy_p[i], label=names[i], alpha=0.8, color=colors[i])
+        ax[0].scatter(*xy_b[i], label=names[i], alpha=0.6, color=colors[i], marker='.')
+        ax[1].scatter(*xy_p[i], label=names[i], alpha=0.6, color=colors[i], marker='.')
     ax[0].set(ylabel='Bispectrum ratio',     ylim=(0.8, 1.2), xlabel='Triangle index') 
     ax[1].set(ylabel='Power spectrum ratio', ylim=(0.8, 1.2), xlabel='Wavenumber [h/Mpc]')
     lgn = ax[1].legend(frameon=False, fontsize=13)
