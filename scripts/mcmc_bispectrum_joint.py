@@ -10,7 +10,7 @@ from multiprocessing.pool import ThreadPool as Pool
 
 from scipy.optimize import minimize
 from src.models import JointSpectrum
-from src.io import Spectrum       
+from src.io import Spectrum, path2cache 
     
 
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -21,17 +21,16 @@ def run_emcee(comm, rank, ns):
     
     if rank==0:
         for k,v in ns.__dict__.items():print(f'{k:15s} : {v}')
-
-        cov = Spectrum(f'../cache/pb_cov_{ns.mock}_bao.npz', allow_pickle=True)
+        cov = Spectrum(path2cache(ns.mock, ns.gal, stat+'cov'), allow_pickle=True)
         cov = cov.y
 
-        y = Spectrum(f'../cache/pk_mean_{ns.mock}_bao.npz')
-        ys = Spectrum(f'../cache/pk_mean_{ns.mock}_nobao.npz')
+        y = Spectrum(path2cache(ns.mock, ns.gal, 'pkmean'))
+        ys = Spectrum(path2cache(ns.mock, ns.gal, 'pksmoothmean'))
         x1 = y.x
         r1 = y.y/ys.y
-        
-        y_ = Spectrum(f'../cache/bk_mean_{ns.mock}_bao.npz')
-        ys_ = Spectrum(f'../cache/bk_mean_{ns.mock}_nobao.npz')
+       
+        y_ = Spectrum(path2cache(ns.mock, ns.gal, 'bkmean'))
+        ys_ = Spectrum(path2cache(ns.mock, ns.gal, 'bksmoothmean'))
         x2 = y_.x
         r2 = y_.y/ys_.y
         
@@ -119,7 +118,7 @@ def run_emcee(comm, rank, ns):
         sampler = emcee.EnsembleSampler(ns.nwalkers, ndim, logpost, pool=pool)
         sampler.run_mcmc(start, ns.nsteps, progress=rank==0)
     
-    filename = f"{stat}_{ns.mock}_{ns.temp}_{kmin:.3f}_{kmax:.3f}.npz"
+    filename = f"{stat}_{ns.mock}_{ns.gal}_{ns.temp}_{kmin:.3f}_{kmax:.3f}.npz"
     output = os.path.join(ns.output_path, filename)
     np.savez(output, **{'chain':sampler.get_chain(), 
                         'log_prob':sampler.get_log_prob(),
@@ -138,7 +137,8 @@ if __name__ == '__main__':
         from argparse import ArgumentParser
         ap = ArgumentParser(description='MCMC for BAO fit')
         ap.add_argument('--mock', default='glam')
-        ap.add_argument('--temp', default='glam')   
+        ap.add_argument('--temp', default='glam')  
+        ap.add_argument('--gal', default='gal')   
         ap.add_argument('--kmin', type=float, default=0.15)
         ap.add_argument('--kmax', type=float, default=0.25)        
         ap.add_argument('--nwalkers', type=int, default=40)

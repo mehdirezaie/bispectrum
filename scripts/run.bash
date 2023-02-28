@@ -11,6 +11,6 @@ temp=$mock
 gal=$2
 stat=$3
 
-mpirun -np 11 python mcmc_bispectrum.py --output_path ../mcmc_feb27/ --stat $stat --mock $mock --temp $temp --gal $gal -v
-#mpirun -np 11 python mcmc_bispectrum_joint.py --output_path ../mcmc_feb27/ --stat $stat --mock $mock --temp $temp --gal $gal -v
+#mpirun -np 11 python mcmc_bispectrum.py --output_path ../mcmc_feb27/ --stat $stat --mock $mock --temp $temp --gal $gal -v
+mpirun -np 11 python mcmc_bispectrum_joint.py --output_path ../mcmc_feb27/ --mock $mock --temp $temp --gal $gal -v
 #mpirun -np 11 python mcmc_bispectrum_nobaojoint.py --output_path ../mcmc_feb27/ --stat $stat --mock $mock --temp $temp --gal $gal -v
