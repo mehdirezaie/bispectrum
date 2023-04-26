@@ -13,10 +13,10 @@ path2mocks =  {
                'glam_gal_bksmooth':'/mnt/data1/BispectrumGLAM/noBAO/Bk_CatshortV.0114.*.h5',
                'molino_gal_pk':'/home/lado/Molino/pk_molino.z0.0.fiducial.nbody*.hod0.hdf5',
                'molino_gal_bk':'/home/lado/Molino/bk_molino.z0.0.fiducial.nbody*.hod0.hdf5',
-               'abacus_lrg_pk':'/mnt/data1/AbacusBisp/pk_LRG*',
-               'abacus_lrg_bk':'/mnt/data1/AbacusBisp/bk_LRG*',
-               'abacus_lrg_bksmooth':'/mnt/data1/Abacus_All/all_bispectrum/all_bk_LRGz0_*.txt',
-               'abacus_lrg_pksmooth':'/mnt/data1/Abacus_All/all_pk_LRGz0_*.txt' 
+               'abacus_lrg_pk':'/Users/mehdi/data/AbacusData/pk_LRG*',
+               'abacus_lrg_bk':'/Users/mehdi/data/AbacusData/bk_LRG*',
+               'abacus_lrg_bksmooth':'/Users/mehdi/data/Abacus_smooth/all_bk_LRGz0_*.txt',
+               'abacus_lrg_pksmooth':'/Users/mehdi/data/Abacus_smooth/all_pk_LRGz0_*.txt' 
               }
 
 
