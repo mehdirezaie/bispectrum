@@ -2,6 +2,39 @@
 import matplotlib.pyplot as plt
 from src.io import path2figs
     
+    
+def setup_color():
+    from cycler import cycler
+    colors = ['#000000', '#e41a1c', '#377eb8', '#ff7f00', '#4daf4a',
+              '#f781bf', '#a65628', '#984ea3',
+              '#999999']
+    styles = ['-', '--', '-.', ':', '--', '-.', ':', '-', '--']
+    plt.rc('axes', prop_cycle=(cycler('color', colors)+cycler('linestyle', styles)))
+    
+    mpl.rcParams['xtick.direction'] = 'in'
+    mpl.rcParams['xtick.major.width'] = 2.0
+    mpl.rcParams['xtick.major.pad'] = 5.0
+    mpl.rcParams['xtick.major.size'] = 9.0
+    mpl.rcParams['xtick.minor.width'] = 2.0
+    mpl.rcParams['xtick.minor.pad'] = 5.0
+    mpl.rcParams['xtick.minor.size'] = 6.0
+    mpl.rcParams['ytick.direction'] = 'in'
+    mpl.rcParams['ytick.major.width'] = 2.0
+    mpl.rcParams['ytick.major.pad'] = 5.0
+    mpl.rcParams['ytick.major.size'] = 9.0
+    mpl.rcParams['ytick.minor.width'] = 2.0
+    mpl.rcParams['ytick.minor.pad'] = 5.0
+    mpl.rcParams['ytick.minor.size'] = 6.0
+    mpl.rcParams['ytick.right'] = True
+    mpl.rcParams['xtick.top'] = True
+    #mpl.rcParams['font.family'] = "Nimbus Sans Narrow" #'DejaVu Sans'
+    mpl.rcParams['font.size'] = 16
+    mpl.rcParams['axes.linewidth'] = 2       
+    mpl.rcParams['legend.frameon'] = False
+    mpl.rcParams['legend.fontsize'] = 12
+    mpl.rcParams['figure.facecolor'] = 'w'     
+    
+    
 def plot_spectra(xy_b, xy_p, names):
     
 #     # --- plot 1
