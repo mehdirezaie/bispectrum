@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.stats import binned_statistic
-from src.models import BiSpectrum
+from src.models import BiSpectrum, DecayedBiSpectrum
 
 from multiprocessing.pool import ThreadPool as Pool
 import emcee
@@ -8,6 +8,7 @@ import emcee
 mock_range = {'LRGz0':(8000, 8025),
               'ELGz1':(1000, 1025),
               'QSOz2':(5000, 5025)}  
+
 
 def get_equilateral(k, eps=0.031):
     """ Identify Equilateral """
@@ -17,6 +18,7 @@ def get_equilateral(k, eps=0.031):
             indices.append(i)
     return np.array(indices)
 
+
 def get_isoceles(k, eps1=0.01, eps2=0.07):
     """ Identify Isoceles """
     indices = []    
@@ -24,6 +26,7 @@ def get_isoceles(k, eps1=0.01, eps2=0.07):
         if (abs(ki[2]-ki[1]) < eps1) & (abs(ki[1]-ki[0]) > eps2):    
             indices.append(i)
     return np.array(indices)
+
 
 def bin_bispectra(k, r):
     """ Bin Spectra """
@@ -40,6 +43,7 @@ def bin_bispectra(k, r):
     
     return k_bin, r_bin
 
+
 def bin_bispectrum(k, r):
     """ Bin Spectra """
     kmin, kmax = np.percentile(k[:, 0], [0, 100])
@@ -47,7 +51,7 @@ def bin_bispectrum(k, r):
     k_bin = 0.5*(bins[1:]+bins[:-1])
     #print(f'marginalize over k2 & k3 given: {bins[:3]} ...')
     
-    r_bin = binned_statistic(k[:, 0], r, bins=bins)[0]    
+    r_bin = binned_statistic(k[:, 0], r, bins=bins, statistic=np.nanmean)[0]    
     return k_bin, r_bin
 
 
@@ -97,7 +101,6 @@ class BiSpectrumData:
         __, self.bs_all = bin_bispectra(self.k, self.b_smooth)        
 
         
-
 def get_bispectra(tracer):
     """ Get Data """ 
     print(f'tracer: {tracer}')
@@ -107,7 +110,7 @@ def get_bispectra(tracer):
     b_bestfit = []
     b_smooth = []
     for i in range(*mock_range[tracer]):
-        bk = np.loadtxt(f'/Users/mehdi/data/Abacus_smooth/all_bk_{tracer}_{i:d}.txt')      
+        bk = np.loadtxt(f'/localdata/abacus/Abacus_smooth/all_bk_{tracer}_{i:d}.txt')      
         b.append(bk[:, 3])
         b_bestfit.append(bk[:, 4])
         b_smooth.append(bk[:, 5])
@@ -115,24 +118,21 @@ def get_bispectra(tracer):
     b = np.array(b)
     b_bestfit = np.array(b_bestfit)
     b_smooth = np.array(b_smooth)
-    k = bk[:, :3]
-    
+    k = bk[:, :3]    
     return BiSpectrumData(k, b, b_bestfit, b_smooth)
-
-
 
 
 def get_powerspectra(tracer, verbose=False):
     """ Get Data """ 
     print(f'tracer: {tracer}')
-  
+    
     # read
     p = []
     p_bestfit = []
     p_smooth = []
     for i in range(*mock_range[tracer]):
-        pk = np.loadtxt(f'/Users/mehdi/data/AbacusData/pk_{tracer}.{i:d}')      
-        pk_smooth = np.loadtxt(f'/Users/mehdi/data/Abacus_smooth/all_pk_{tracer}_{i:d}.txt')
+        pk = np.loadtxt(f'/localdata/abacus/AbacusData/pk_{tracer}.{i:d}')      
+        pk_smooth = np.loadtxt(f'/localdata/abacus/Abacus_smooth/all_pk_{tracer}_{i:d}.txt')
         p.append(pk[:, 1])
         p_bestfit.append(pk_smooth[:, 1])
         p_smooth.append(pk_smooth[:, 2])
@@ -141,7 +141,6 @@ def get_powerspectra(tracer, verbose=False):
     p_bestfit = np.array(p_bestfit)
     p_smooth = np.array(p_smooth)
     k = pk[:, 0]
-    
     return PowerSpectrumData(k, p, p_bestfit, p_smooth)
 
 
@@ -151,21 +150,22 @@ def get_corr(x, y):
     cyy = ((y-y.mean())*(y-y.mean())).sum()
     return cxy/np.sqrt(cxx*cyy)
 
+
 def correlate(r_b, r_p):
-    
     corr = np.ones((r_b.shape[1], r_p.shape[1]))
     corr[:,:] = np.nan
     for i in range(r_b.shape[1]):
         for j in range(r_p.shape[1]):
-            corr[i, j] = get_corr(r_b[:, i], r_p[:, j])
-            
+            corr[i, j] = get_corr(r_b[:, i], r_p[:, j])            
     return corr
+
 
 def get_rcov(y):
     cov_ = np.cov(y, rowvar=0)
     std_ = np.diagonal(cov_)**0.5
     rcov = cov_ / np.outer(std_, std_)    
     return rcov
+
 
 def prep_rcov(input_files, output_file, icol):    
     n = len(input_files)
@@ -177,12 +177,10 @@ def prep_rcov(input_files, output_file, icol):
     
     y = np.array(y)
     rcov_raw = get_rcov(y)
-    
     if icol==3:
         k = d_[:, :3]
         k_all, y_all = bin_bispectra(k, y)
         rcov_all = get_rcov(y_all)
-
         is_good = get_isoceles(k)
         k_good = k[is_good]
         y_good = y[:, is_good]
@@ -226,7 +224,8 @@ class BisPosterior:
         self.k_obs_ = k_obs*1.
         self.r_obs_ = r_obs*1.
         self.r_cov_ = r_cov*1.
-        
+        print("data is added") 
+
     def select_krange(self, kmin=0.00, kmax=0.4):
         self.kranges.append([kmin, kmax])
         
@@ -236,6 +235,7 @@ class BisPosterior:
         self.k_obs = self.k_obs_[self.is_g]
         self.r_obs = self.r_obs_[self.is_g]
         self.i_cov = np.linalg.inv(self.r_cov_[self.is_g,:][:, self.is_g])        
+        print("data is cut based on k")
 
     def loglike(self, p):  
         r_m = self.r_t(self.k_obs, p)
@@ -250,7 +250,7 @@ class BisPosterior:
         lp += 0. if  0.95 < p[0] < 1.05 else -np.inf
         lp += 0. if  0.8 < p[1] < 1.2 else -np.inf    
         for p_i in p[2:]:
-            lp += 0. if  -1. < p_i < 1. else -np.inf
+            lp += 0. if  -100. < p_i < 100. else -np.inf
         return lp
 
     def logpost(self, p):
@@ -264,16 +264,14 @@ class BisPosterior:
             print(a, like)
             #plt.scatter(a, -2*like, color=color, **kw) 
             
-    def run_mcmc(self):
-        
-        nwalkers = 22
+    def run_mcmc(self, nsteps=1000, nwalkers=22):
+        np.random.seed(42)
         ndim   = 11
-        nsteps = 1000
         cov = 0.001*np.eye(11)
         best = [1.0, 1.0]+9*[0., ]
         start = np.random.multivariate_normal(best, cov, size=nwalkers)
 
-        with Pool(4) as pool:    
+        with Pool(1) as pool:    
             sampler = emcee.EnsembleSampler(nwalkers, ndim, self.logpost, pool=pool)
             sampler.run_mcmc(start, nsteps, progress=True)
             
@@ -284,23 +282,84 @@ class BisPosterior:
         np.savez(path2file, **{'samples':self.samples, 'kranges':self.kranges})
     
             
-            
+
+class RedBisPosterior:
+    def __init__(self):
+        self.kranges = []
+        self.samples = []
     
+    def __call__(self, p):
+        return self.logpost(p)
+        
+    def add_template(self, k_t, r_t, decay=False):
+        self.k_t = k_t
+        if decay:
+            self.r_t = DecayedBiSpectrum(k_t, r_t)
+        else:
+            self.r_t = BiSpectrum(k_t, r_t)
+        
+    def add_data(self, k_obs, r_obs, r_cov):
+        self.k_obs_ = k_obs*1.
+        self.r_obs_ = r_obs*1.
+        self.r_cov_ = r_cov*1.
+        print("data is added") 
+
+    def select_krange(self, kmin=0.00, kmax=0.4):
+        self.kranges.append([kmin, kmax])
+        
+        self.is_g = (self.k_obs_ > kmin) & (self.k_obs_ < kmax)
+        #self.is_g = is_g.sum(axis=1) == 3
+        
+        self.k_obs = self.k_obs_[self.is_g]
+        self.r_obs = self.r_obs_[self.is_g]
+        self.i_cov = np.linalg.inv(self.r_cov_[self.is_g,:][:, self.is_g])        
+        print("data is cut based on k")
+
+    def loglike(self, p):
+        r_m = self.r_t(self.k_t, p)
+        
+        k_bin, r_m_bin = bin_bispectrum(self.k_t, r_m)
+        k_bin = k_bin[self.is_g]
+        r_m_bin = r_m_bin[self.is_g]
+        
+        res = (r_m_bin - self.r_obs)
+        like = -0.5*res.dot(self.i_cov.dot(res))   
+        return like if np.isfinite(like) else -np.inf
+    
+    def logprior(self, p):
+        lp = 0.
+        lp += 0. if  0.8 < p[0] < 1.2 else -np.inf
+        lp += 0. if  0.8 < p[1] < 1.2 else -np.inf    
+        for p_i in p[2:]:
+            lp += 0. if  -100. < p_i < 100. else -np.inf
+        return lp
+
+    def logpost(self, p):
+        return self.logprior(p) + self.loglike(p)
+    
+    def test(self, alphas, color='k', **kw):
+        for a in alphas:
+            like = self([a, 1.0, 0.00, 0.0, 0.0,
+                         0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+            print(a, like)
             
-#k_bin, rm_bin = src.utils.bin_bispectrum(self.k[is_good], r_m[is_good])
-#k_ix = ((k_bin - k.min()+1.0e-8)/0.01).astype('int')
-#residual = (rm_bin - self.r[k_ix])
+    def run_mcmc(self, nsteps=1000, nwalkers=22):
+        np.random.seed(42)
+        ndim   = 11
+        cov = 0.001*np.eye(11)
+        best = [1.0, 1.0]+9*[0., ]
+        start = np.random.multivariate_normal(best, cov, size=nwalkers)
 
-#is_good = (k_bin > kmin) & (k_bin < kmax)
-#is_good = np.isfinite(residual)
-
-
-#chi2 = residual.dot(np.linalg.inv(rcov[is_good,:][:, is_good]).dot(residual))
-#is_finite = ~np.isnan(chi2)
-#if is_finite.sum()==0:
-#    return -np.inf
-#return -0.5*chi2[is_finite].sum()
-
+        with Pool(1) as pool:    
+            sampler = emcee.EnsembleSampler(nwalkers, ndim, self.logpost, pool=pool)
+            sampler.run_mcmc(start, nsteps, progress=True)
+            
+        self.samples.append({'chain':sampler.get_chain(), 
+                             'log_prob':sampler.get_log_prob()})
+        
+    def save(self, path2file):
+        np.savez(path2file, **{'samples':self.samples, 'kranges':self.kranges})
+        
 
 def load_data(tracer, stat, reduced, template): 
     if stat=='bk':
@@ -322,12 +381,17 @@ def load_data(tracer, stat, reduced, template):
         r = m.p / m.p_smooth.mean(axis=0)    
         k = m.k
 
-    r_cov_ = np.load(f'/Users/mehdi/github/bispectrum/{stat}_molino.z0.0.fiducial.rcov.npz', allow_pickle=True)
+    r_cov_ = np.load(f'/lhome/mr095415/linux/github/bispectrum/{stat}_molino.z0.0.fiducial.rcov.npz', allow_pickle=True)
     r_cov = r_cov_[reduced] * np.outer(r.std(axis=0), r.std(axis=0)) 
      
     # --- template: TODO
-    k_tem = m.k
-    r_tem = m.b.mean(axis=0)/m.b_smooth.mean(axis=0)
+    if template == 'lado':
+        temp = np.loadtxt('/localdata/commondata/BK_bao_only.txt').T
+        k_tem = temp[:, :3]
+        r_tem = temp[:, 3]
+    else:
+        k_tem = m.k
+        r_tem = m.b.mean(axis=0)/m.b_smooth.mean(axis=0)
     
     # --- measurement
     k_obs = k
@@ -335,7 +399,6 @@ def load_data(tracer, stat, reduced, template):
     r_cov = r_cov
     
     return (k_obs, r_obs, r_cov), (k_tem, r_tem)
-
 
 
 def read_chi2(chain, log_prob, burn_in=200, bins=21):
@@ -346,6 +409,30 @@ def read_chi2(chain, log_prob, burn_in=200, bins=21):
     return xm, ym    
 
 
+def read_alphas(files):
+    a_max_list = []
+    a_std_list = []
+
+    for file_i in files:
+
+        d_ = np.load(file_i, allow_pickle=True)
+
+        a = []
+        b = []
+        for i, sam in enumerate(d_['samples']):
+            log_prob = sam['log_prob']
+            ix_max = np.argmax(log_prob)
+            a_max = sam['chain'][:, :, 0].flatten()[ix_max]
+            a_std = np.std(sam['chain'][200:, :, 0].flatten())
+            a.append(a_max)
+            b.append(a_std)
+
+        a_max_list.append(a)
+        a_std_list.append(b)
+
+    a_max_list = np.array(a_max_list)    
+    a_std_list = np.array(a_std_list)
+    return a_max_list, a_std_list, d_['kranges']
 # def get_cov(y, y_):
 
 #     cov_ = np.cov(y, rowvar=0)

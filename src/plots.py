@@ -30,7 +30,7 @@ def setup_color():
     mpl.rcParams['ytick.minor.size'] = 6.0
     mpl.rcParams['ytick.right'] = True
     mpl.rcParams['xtick.top'] = True
-    mpl.rcParams['font.family'] = "Times"
+    #mpl.rcParams['font.family'] = "Times"
     mpl.rcParams['font.size'] = 16
     mpl.rcParams['axes.linewidth'] = 2       
     mpl.rcParams['legend.frameon'] = False
@@ -57,7 +57,7 @@ def plot_data():
         ax[i].errorbar(np.arange(len(k3)), k3*tracer.b.mean(axis=0), yerr=k3*np.std(tracer.b, axis=0), zorder=-10)
         ax[i].plot(k3*tracer.b_bestfit.mean(axis=0), lw=1, alpha=0.5)
         ax[i].annotate(name, (0.05, 0.85), xycoords='axes fraction', color='C0')
-        ax[i].set(ylabel=r'$k_{1}k_{2}k_{3}\bf{B}$')    
+        ax[i].set(ylabel=r'$k_{1}k_{2}k_{3}B$')    
 
     ax[2].annotate('Best Fit Bispectrum', 
                    (0.65, 0.1), xycoords='axes fraction', color='C1')
@@ -72,7 +72,7 @@ def plot_data():
         ax[i].plot(tracer.b.mean(axis=0)/tracer.b_smooth.mean(axis=0), lw=1, label=name, color='k')
         ax[i].annotate(name, (0.85, 0.85), xycoords='axes fraction', color='k')
         ax[i].axhline(1.0, ls='--', color='r')
-        ax[i].set(ylabel=r'$\bf{B}/\bf{B}_{\rm smooth}$', ylim=(0.78, 1.22))
+        ax[i].set(ylabel=r'$B/B_{\rm smooth}$', ylim=(0.78, 1.22))
     ax[2].set_xlabel('Triangle Index')
     fig.align_ylabels()
     fig.savefig('../bisp4desi/figures/spectra_ratio.pdf', bbox_inches='tight')    
@@ -100,7 +100,7 @@ def plot_data():
         add_plot(ax[i], tracer.k_eqi, tracer.b_eqi, tracer.bs_eqi, label='Equilateral')
         ax[i].annotate(name, (0.85, 0.85), xycoords='axes fraction', color='k')
         ax[i].axhline(1.0, ls='--', color='r')
-    ax[1].set(ylabel=r'$<{\bfB}>_{k_{2},k_{3}}~/~<{\bf B}_{\rm smooth}>_{k_{2},k_{3}}$', ylim=(0.78, 1.22))
+    ax[1].set(ylabel=r'$<B>_{k_{2},k_{3}}~/~<B_{\rm smooth}>_{k_{2},k_{3}}$', ylim=(0.78, 1.22))
     ax[2].set_xlabel(r'$k_{1} [h/{\rm Mpc}]$')
     legend = ax[0].legend(fontsize=14, loc='lower right')#, bbox_to_anchor=(0., 1.1, 1., 0.2))
     for i,txt in enumerate(legend.get_texts()):
@@ -116,7 +116,7 @@ def plot_data():
         add_plot(ax[i], tracer.k, tracer.p, tracer.p_smooth, label='All')    
         ax[i].annotate(name, (0.85, 0.85), xycoords='axes fraction', color='k')
         ax[i].axhline(1.0, ls='--', color='r')
-    ax[1].set(ylabel=r'${\bfP}~/~{\bf P}_{\rm smooth}$', ylim=(0.78, 1.22))
+    ax[1].set(ylabel=r'$P~/~P_{\rm smooth}$', ylim=(0.78, 1.22))
     ax[2].set_xlabel(r'$k [h/{\rm Mpc}]$')
     legend = ax[0].legend(fontsize=14, loc='lower right')#, bbox_to_anchor=(0., 1.1, 1., 0.2))
     for i,txt in enumerate(legend.get_texts()):

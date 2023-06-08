@@ -15,6 +15,7 @@ class BiSpectrum(object):
     
     def __init__(self, x, y):
         self.y_intb = LinearNDInterpolator(x, y, fill_value=np.nan)
+        print("interpolation done")
     
     def __call__(self, x, p): # 11 params
         return p[1]*self.y_intb(p[0]*x) + p[2] + p[3]*(x[:, 0] + x[:, 1] + x[:, 2]) \
@@ -25,6 +26,15 @@ class BiSpectrum(object):
                 + p[8]*(1./(x[:, 0]*x[:, 1]) + 1./(x[:, 0]*x[:, 2]) + 1./(x[:, 1]*x[:, 2])) \
                 + p[9]*(x[:, 0]*x[:, 1]/x[:, 2] + x[:, 0]*x[:, 2]/x[:, 1] + x[:, 1]*x[:, 2]/x[:, 0]) \
                 + p[10]*(x[:, 2]/(x[:, 0]*x[:, 1]) + x[:, 1]/(x[:, 0]*x[:, 2]) + x[:, 0]/(x[:, 1]*x[:, 2]))    
+    
+    
+class DecayedBiSpectrum(BiSpectrum):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        
+    def __call__(self, x, p, sigma=-7.0):
+        r = super().__call__(x, p)
+        return (r-1.0)*(np.exp(sigma*(x[:, 0]**2 + x[:, 1]**2 + x[:, 2]**2)))+1.0
     
     
 class JointSpectrum(PowerSpectrum, BiSpectrum):
