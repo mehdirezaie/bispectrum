@@ -1,3 +1,4 @@
+import sys
 import src
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,17 +9,16 @@ warnings.filterwarnings('ignore')
 tracer = 'LRGz0'
 stat = 'bk'
 reduced = 'all'
-temp = 'none'
+temp = sys.argv[1]
 nmocks = 25
 kmax_range = [0.25,]
 kmin = 0.05
 
 PS = src.utils.BisPosterior if reduced=='raw' else src.utils.RedBisPosterior
-
 (k_obs, r_obs, r_cov), (k_tem, r_tem) = src.utils.load_data(tracer, stat, reduced, temp)
 
 print(k_obs.shape, r_obs.shape, r_cov.shape, k_tem.shape, r_tem.shape)
-for i in range(nmocks):
+for i in range(21, 25):
     
     ps = PS()
     ps.add_data(k_obs, r_obs[i, :], r_cov)

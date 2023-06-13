@@ -361,7 +361,8 @@ class RedBisPosterior:
         np.savez(path2file, **{'samples':self.samples, 'kranges':self.kranges})
         
 
-def load_data(tracer, stat, reduced, template): 
+def load_data(tracer, stat, reduced, template):
+    print(tracer, stat, reduced, template)
     if stat=='bk':
         m = get_bispectra(tracer)
         if reduced=='raw':

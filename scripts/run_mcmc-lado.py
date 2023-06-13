@@ -18,7 +18,7 @@ PS = src.utils.BisPosterior if reduced=='raw' else src.utils.RedBisPosterior
 (k_obs, r_obs, r_cov), (k_tem, r_tem) = src.utils.load_data(tracer, stat, reduced, temp)
 
 print(k_obs.shape, r_obs.shape, r_cov.shape, k_tem.shape, r_tem.shape)
-for i in range(16, nmocks):
+for i in range(nmocks):
     
     ps = PS()
     ps.add_data(k_obs, r_obs[i, :], r_cov)
