@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.stats import binned_statistic
-from src.models import BiSpectrum, DecayedBiSpectrum
+from src.models import BiSpectrum, DecayedBiSpectrum, PowerSpectrum
 
 from multiprocessing.pool import ThreadPool as Pool
 import emcee
@@ -212,7 +212,6 @@ class BisPosterior:
         self.kranges = []
         self.samples = []
         
-    
     def __call__(self, p):
         return self.logpost(p)
         
@@ -244,10 +243,9 @@ class BisPosterior:
         res = r_m[is_g] - self.r_obs[is_g]
         return -0.5*res.dot(self.i_cov[is_g, :][:, is_g].dot(res))
     
-    
     def logprior(self, p):
         lp = 0.
-        lp += 0. if  0.95 < p[0] < 1.05 else -np.inf
+        lp += 0. if  0.8 < p[0] < 1.2 else -np.inf
         lp += 0. if  0.8 < p[1] < 1.2 else -np.inf    
         for p_i in p[2:]:
             lp += 0. if  -100. < p_i < 100. else -np.inf
@@ -255,7 +253,6 @@ class BisPosterior:
 
     def logpost(self, p):
         return self.logprior(p) + self.loglike(p)
-    
     
     def test(self, alphas, color='k', **kw):
         for a in alphas:
@@ -361,6 +358,79 @@ class RedBisPosterior:
         np.savez(path2file, **{'samples':self.samples, 'kranges':self.kranges})
         
 
+
+class PowPosterior:
+    def __init__(self):
+        self.kranges = []
+        self.samples = []
+    
+    def __call__(self, p):
+        return self.logpost(p)
+        
+    def add_template(self, k_t, r_t, decay=False):
+        self.k_t = k_t
+        self.r_t = PowerSpectrum(k_t, r_t)
+        
+    def add_data(self, k_obs, r_obs, r_cov):
+        self.k_obs_ = k_obs*1.
+        self.r_obs_ = r_obs*1.
+        self.r_cov_ = r_cov*1.
+        print("data is added") 
+
+    def select_krange(self, kmin=0.00, kmax=0.4):
+        self.kranges.append([kmin, kmax])
+        
+        self.is_g = (self.k_obs_ > kmin) & (self.k_obs_ < kmax)
+        
+        self.k_obs = self.k_obs_[self.is_g]
+        self.r_obs = self.r_obs_[self.is_g]
+        self.i_cov = np.linalg.inv(self.r_cov_[self.is_g,:][:, self.is_g])        
+        print("data is cut based on k")
+
+    def loglike(self, p):
+        r_m = self.r_t(self.k_obs, p)
+        res = (r_m - self.r_obs)
+        is_g = np.isfinite(res)
+        like = -0.5*res[is_g].dot(self.i_cov[is_g,:][:, is_g].dot(res[is_g]))   
+        return like if np.isfinite(like) else -np.inf
+    
+    def logprior(self, p):
+        lp = 0.
+        lp += 0. if  0.8 < p[0] < 1.2 else -np.inf
+        lp += 0. if  0.8 < p[1] < 1.2 else -np.inf    
+        for p_i in p[2:]:
+            lp += 0. if  -100. < p_i < 100. else -np.inf
+        return lp
+
+    def logpost(self, p):
+        return self.logprior(p) + self.loglike(p)
+    
+    def test(self, alphas, color='k', **kw):
+        for a in alphas:
+            like = self([a, 1.0,
+                         0.0, 0.0, 0.0, 0.0, 0.0])
+            print(a, like)
+            
+    def run_mcmc(self, nsteps=1000, nwalkers=22):
+        np.random.seed(42)
+        ndim   = 7
+        cov = 0.001*np.eye(7)
+        best = [1.0, 1.0]+5*[0., ]
+        start = np.random.multivariate_normal(best, cov, size=nwalkers)
+
+        with Pool(1) as pool:    
+            sampler = emcee.EnsembleSampler(nwalkers, ndim, self.logpost, pool=pool)
+            sampler.run_mcmc(start, nsteps, progress=True)
+            
+        self.samples.append({'chain':sampler.get_chain(), 
+                             'log_prob':sampler.get_log_prob()})
+        
+    def save(self, path2file):
+        np.savez(path2file, **{'samples':self.samples, 'kranges':self.kranges})
+
+
+
+
 def load_data(tracer, stat, reduced, template):
     print(tracer, stat, reduced, template)
     if stat=='bk':
@@ -387,12 +457,19 @@ def load_data(tracer, stat, reduced, template):
      
     # --- template: TODO
     if template == 'lado':
-        temp = np.loadtxt('/localdata/commondata/BK_bao_only.txt').T
-        k_tem = temp[:, :3]
-        r_tem = temp[:, 3]
+        if stat=='bk':
+            temp = np.loadtxt('/localdata/commondata/BK_bao_only.txt').T
+            k_tem = temp[:, :3]
+            r_tem = temp[:, 3]
+        else:
+            raise NotImplementedError(stat)
     else:
-        k_tem = m.k
-        r_tem = m.b.mean(axis=0)/m.b_smooth.mean(axis=0)
+        if stat=='bk':
+            k_tem = m.k
+            r_tem = m.b.mean(axis=0)/m.b_smooth.mean(axis=0)
+        else:
+            k_tem = m.k
+            r_tem = m.p.mean(axis=0)/m.p_smooth.mean(axis=0)
     
     # --- measurement
     k_obs = k
