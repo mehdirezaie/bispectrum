@@ -9,7 +9,7 @@ warnings.filterwarnings('ignore')
 tracer = 'LRGz0'
 stat = 'pk'
 reduced = 'raw'
-temp = 'none'
+temp = 'lado'
 nmocks = 25
 kmax_range = [0.25,]
 kmin = 0.05
@@ -22,7 +22,7 @@ else:
 (k_obs, r_obs, r_cov), (k_tem, r_tem) = src.utils.load_data(tracer, stat, reduced, temp)
 print(k_obs.shape, r_obs.shape, r_cov.shape, k_tem.shape, r_tem.shape)
 
-for i in range(nmocks):
+for i in range(11, nmocks):
     
     ps = PS()
     ps.add_data(k_obs, r_obs[i, :], r_cov)

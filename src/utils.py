@@ -462,7 +462,9 @@ def load_data(tracer, stat, reduced, template):
             k_tem = temp[:, :3]
             r_tem = temp[:, 3]
         else:
-            raise NotImplementedError(stat)
+            temp = np.loadtxt('/lhome/mr095415/linux/Pk_bao_only.txt')
+            k_tem = m.k
+            r_tem = temp
     else:
         if stat=='bk':
             k_tem = m.k
