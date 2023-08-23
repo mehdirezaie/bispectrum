@@ -6,4 +6,5 @@ echo "tracer" $1
 echo "stat" $2
 echo "reduce" $3
 echo "template" $4
-python run_mcmc.py $1 $2 $3 $4 
+echo "use diag" $5
+python run_mcmc.py $1 $2 $3 $4 $5

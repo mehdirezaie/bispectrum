@@ -268,9 +268,8 @@ class BisPosterior:
         best = [1.0, 1.0]+9*[0., ]
         start = np.random.multivariate_normal(best, cov, size=nwalkers)
 
-        with Pool(1) as pool:    
-            sampler = emcee.EnsembleSampler(nwalkers, ndim, self.logpost, pool=pool)
-            sampler.run_mcmc(start, nsteps, progress=True)
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.logpost)
+        sampler.run_mcmc(start, nsteps, progress=True)
             
         self.samples.append({'chain':sampler.get_chain(), 
                              'log_prob':sampler.get_log_prob()})
@@ -347,9 +346,8 @@ class RedBisPosterior:
         best = [1.0, 1.0]+9*[0., ]
         start = np.random.multivariate_normal(best, cov, size=nwalkers)
 
-        with Pool(1) as pool:    
-            sampler = emcee.EnsembleSampler(nwalkers, ndim, self.logpost, pool=pool)
-            sampler.run_mcmc(start, nsteps, progress=True)
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.logpost)
+        sampler.run_mcmc(start, nsteps, progress=True)
             
         self.samples.append({'chain':sampler.get_chain(), 
                              'log_prob':sampler.get_log_prob()})
@@ -418,9 +416,8 @@ class PowPosterior:
         best = [1.0, 1.0]+5*[0., ]
         start = np.random.multivariate_normal(best, cov, size=nwalkers)
 
-        with Pool(1) as pool:    
-            sampler = emcee.EnsembleSampler(nwalkers, ndim, self.logpost, pool=pool)
-            sampler.run_mcmc(start, nsteps, progress=True)
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.logpost)
+        sampler.run_mcmc(start, nsteps, progress=True)
             
         self.samples.append({'chain':sampler.get_chain(), 
                              'log_prob':sampler.get_log_prob()})
@@ -431,7 +428,7 @@ class PowPosterior:
 
 
 
-def load_data(tracer, stat, reduced, template):
+def load_data(tracer, stat, reduced, template, use_diag=False):
     print(tracer, stat, reduced, template)
     if stat=='bk':
         m = get_bispectra(tracer)
@@ -452,8 +449,11 @@ def load_data(tracer, stat, reduced, template):
         r = m.p / m.p_smooth.mean(axis=0)    
         k = m.k
 
-    r_cov_ = np.load(f'/lhome/mr095415/linux/github/bispectrum/{stat}_molino.z0.0.fiducial.rcov.npz', allow_pickle=True)
-    r_cov = r_cov_[reduced] * np.outer(r.std(axis=0), r.std(axis=0)) 
+    if use_diag:
+        r_cov = np.diag(np.var(r, axis=0))
+    else:
+        r_cov_ = np.load(f'/lhome/mr095415/linux/github/bispectrum/{stat}_molino.z0.0.fiducial.rcov.npz', allow_pickle=True)
+        r_cov = r_cov_[reduced] * np.outer(r.std(axis=0), r.std(axis=0)) 
      
     # --- template: TODO
     if template == 'lado':
