@@ -466,8 +466,8 @@ def load_data(tracer, stat, reduced, template, use_diag=False):
             r_tem = temp[:, 3]
         else:
             temp = np.loadtxt(f'{path_code}Pk_bao_only.txt')
-            k_tem = m.k
-            r_tem = temp
+            k_tem = temp[:, :3]
+            r_tem = temp[:, 3]
     else:
         if stat=='bk':
             k_tem = m.k
