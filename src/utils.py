@@ -458,11 +458,11 @@ def load_data(tracer, stat, reduced, template, use_diag=False):
     # --- template: TODO
     if template == 'lado':
         if stat=='bk':
-            temp = np.loadtxt('/localdata/commondata/BK_bao_only.txt').T
+            temp = np.loadtxt('/lhome/mr095415/linux/github/bispectrum/BK_bao_only.txt').T
             k_tem = temp[:, :3]
             r_tem = temp[:, 3]
         else:
-            temp = np.loadtxt('/lhome/mr095415/linux/Pk_bao_only.txt')
+            temp = np.loadtxt('/lhome/mr095415/linux/github/bispectrum/Pk_bao_only.txt')
             k_tem = m.k
             r_tem = temp
     else:

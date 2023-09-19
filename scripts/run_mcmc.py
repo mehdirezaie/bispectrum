@@ -13,7 +13,7 @@ temp = sys.argv[4] #'lado'
 use_diag = int(sys.argv[5]) > 0.5
 
 nmocks = 25
-kmax_range = [0.25,]
+kmax_range = [0.17, 0.19, 0.21, 0.23]  # 0.25 is already done
 kmin = 0.05
 
 if stat=='bk':
@@ -34,5 +34,5 @@ for i in range(nmocks):
         ps.select_krange(kmin=kmin, kmax=kmax)
         ps.run_mcmc(nsteps=1000)
         
-    print(f'saving ... mcmc_{stat}_{reduced}_{tracer}_mock{i}_{temp}_p1_p2_1k_{use_diag}.npz')
-    ps.save(f'/localdata/desi/mcmc_{stat}_{reduced}_{tracer}_mock{i}_{temp}_p1_p2_1k_{use_diag}.npz')
+    print(f'saving ... mcmc_{stat}_{reduced}_{tracer}_mock{i}_{temp}_p1_p3_1k_{use_diag}.npz')
+    ps.save(f'/localdata/desi/mcmc_{stat}_{reduced}_{tracer}_mock{i}_{temp}_p1_p3_1k_{use_diag}.npz')
