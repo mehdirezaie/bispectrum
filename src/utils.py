@@ -10,6 +10,9 @@ mock_range = {'LRGz0':(8000, 8025),
               'QSOz2':(5000, 5025)}  
 
 
+dir_data = '/Users/mehdi/data/'
+path_code = '/Users/mehdi/Downloads/github/bispectrum/'
+
 def get_equilateral(k, eps=0.031):
     """ Identify Equilateral """
     indices = []
@@ -110,7 +113,7 @@ def get_bispectra(tracer):
     b_bestfit = []
     b_smooth = []
     for i in range(*mock_range[tracer]):
-        bk = np.loadtxt(f'/localdata/abacus/Abacus_smooth/all_bk_{tracer}_{i:d}.txt')      
+        bk = np.loadtxt(f'{dir_data}Abacus_smooth/all_bk_{tracer}_{i:d}.txt')      
         b.append(bk[:, 3])
         b_bestfit.append(bk[:, 4])
         b_smooth.append(bk[:, 5])
@@ -131,8 +134,8 @@ def get_powerspectra(tracer, verbose=False):
     p_bestfit = []
     p_smooth = []
     for i in range(*mock_range[tracer]):
-        pk = np.loadtxt(f'/localdata/abacus/AbacusData/pk_{tracer}.{i:d}')      
-        pk_smooth = np.loadtxt(f'/localdata/abacus/Abacus_smooth/all_pk_{tracer}_{i:d}.txt')
+        pk = np.loadtxt(f'{dir_data}AbacusData/pk_{tracer}.{i:d}')      
+        pk_smooth = np.loadtxt(f'{dir_data}Abacus_smooth/all_pk_{tracer}_{i:d}.txt')
         p.append(pk[:, 1])
         p_bestfit.append(pk_smooth[:, 1])
         p_smooth.append(pk_smooth[:, 2])
@@ -452,17 +455,17 @@ def load_data(tracer, stat, reduced, template, use_diag=False):
     if use_diag:
         r_cov = np.diag(np.var(r, axis=0))
     else:
-        r_cov_ = np.load(f'/lhome/mr095415/linux/github/bispectrum/{stat}_molino.z0.0.fiducial.rcov.npz', allow_pickle=True)
+        r_cov_ = np.load(f'{path_code}{stat}_molino.z0.0.fiducial.rcov.npz', allow_pickle=True)
         r_cov = r_cov_[reduced] * np.outer(r.std(axis=0), r.std(axis=0)) 
      
     # --- template: TODO
     if template == 'lado':
         if stat=='bk':
-            temp = np.loadtxt('/localdata/commondata/BK_bao_only.txt').T
+            temp = np.loadtxt(f'{path_code}BK_bao_only.txt').T
             k_tem = temp[:, :3]
             r_tem = temp[:, 3]
         else:
-            temp = np.loadtxt('/lhome/mr095415/linux/Pk_bao_only.txt')
+            temp = np.loadtxt(f'{path_code}Pk_bao_only.txt')
             k_tem = m.k
             r_tem = temp
     else:
