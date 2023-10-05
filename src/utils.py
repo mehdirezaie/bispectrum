@@ -513,6 +513,28 @@ def read_alphas(files):
     a_max_list = np.array(a_max_list)    
     a_std_list = np.array(a_std_list)
     return a_max_list, a_std_list, d_['kranges']
+
+
+"""
+    solve_triangular_geometry(k1, k2, k3)
+
+    Find all relevant angles of the triangle. μ_i is the cosine of the angle 
+    of the ki vector with respect to the z-axis. μij is the cosine of the
+    angle between vectors ki and kj.
+
+    Input:
+    k1, k2, k3
+    Output:
+    nu12, nu23, nu31
+"""
+def solve_triangular_geometry(k1, k2, k3):
+    nu12 = (k1**2 + k2**2 - k3**2)/(2*k1*k2)
+    nu31 = (k3**2 + k1**2 - k2**2)/(2*k3*k1)
+    nu23 = (k2**2 + k3**2 - k1**2)/(2*k2*k3)
+    return nu12, nu23, nu31
+
+
+
 # def get_cov(y, y_):
 
 #     cov_ = np.cov(y, rowvar=0)
