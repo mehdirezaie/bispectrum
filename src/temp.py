@@ -6,7 +6,7 @@ from scipy import integrate
 from numba import jit
 
 
-def tree_level_b00(k1, k2, k3, b1, b2, f, s0, s1, pk):
+def tree_level_b00(k1, k2, k3, f, b1, b2, s0, s1, pk):
     
     twoY00=np.sqrt(1./np.pi)
     
@@ -82,16 +82,9 @@ def Bisp(var, parc, pk1,pk2,pk3,linear = True):
     #apar, aper, f, b1, b2 = parc
     f, b1, b2 = parc
 
-    mu12 = (k3**2 - k1**2 - k2**2)/(2*k1*k2)
-    #mu12, mu23, mu31 = solve_triangular_geometry(k1, k2, k3)
-    
+    mu12, mu23, mu31 = solve_triangular_geometry(k1, k2, k3)    
     mu2 = mu1*mu12 - np.sqrt(1 - mu1**2)*np.sqrt(1 - mu12**2)*np.cos(phi12)
     mu3 = -(mu1*k1 + mu2*k2)/k3
-
-    mu31 = -(k1 + k2*mu12)/k3
-    mu23 = -(k1*mu12 + k2)/k3
-
-    #print(k1,k2,k3, np.arccos(mu12),np.arccos(mu31),np.arccos(mu23))
 
     Z1k1 = b1 + f*mu1**2
     Z1k2 = b1 + f*mu2**2
@@ -127,7 +120,7 @@ def Bisp(var, parc, pk1,pk2,pk3,linear = True):
 
     
 
-def Bi0(k1, k2, k3, b1, b2, f, s0, s1, pk): #(kk, pk1, pk2, pk3, f, b1, b2, S0, S1):
+def Bi0(k1, k2, k3, f, b1, b2, s0, s1, pk):
     '''
     Integrate Bisp to get the monopole
     '''
@@ -144,3 +137,18 @@ def Bi0(k1, k2, k3, b1, b2, f, s0, s1, pk): #(kk, pk1, pk2, pk3, f, b1, b2, S0, 
         ans = ans + s0 + s1 * (pk1[i] + pk2[i] + pk3[i]) # Add extra nuissance params. This term is not a part of scoccimaro equation. Skip this step if you want to use only scoccimaro eq.
         out.append(2*Y00*ans)
     return np.array(out)
+
+
+def Bi_wiggle(k1, k2, k3, f, b1, b2, s0, s1, pk, pk_smooth): #kk,pk1,pk2,pk3,pkn1,pkn2,pkn3,f,b1,b2,S0,S1):
+    '''
+    pkm - full mean power spectrum
+    pknm - nobao/smooth mean power spectrum
+    k - respective k-values at which power spectrum is measured
+    kk - k-triplets where bispectrum is measured
+    f,b1,b2 - free parameters
+    '''
+    B_full = Bi0(k1, k2, k3, b1, b2, f, s0, s1, pk) # Bi0(kk,pk1,pk2,pk3,f,b1,b2,S0,S1)
+    B_nbao = Bi0(k1, k2, k3, b1, b2, f, s0, s1, pk_smooth) #Bi0(kk,pkn1,pkn2,pkn3,f,b1,b2,S0,S1)
+    B_wig = B_full/B_nbao
+    
+    return B_wig
