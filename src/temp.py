@@ -3,10 +3,12 @@ import scipy.interpolate as interpolate
 from scipy.optimize import curve_fit
 
 from scipy import integrate
-#from numba import jit
+from numba import jit
 
 
 def tree_level_b00(k1, k2, k3, b1, b2, f, s0, s1, pk):
+    
+    twoY00=np.sqrt(1./np.pi)
     
     pk1 = pk(k1)
     pk2 = pk(k2)
@@ -59,7 +61,7 @@ def tree_level_b00(k1, k2, k3, b1, b2, f, s0, s1, pk):
           k2*(5*mu12**4*mu31 - 4*mu12**3* nu12* nu31 - 4*mu12* nu12* nu31*(3*mu31**2 +  nu12**2 +  nu31**2) + mu31* nu12**2*(2*mu31**2 +  nu12**2 + 6* nu31**2) + 
             2*mu12**2*mu31*(5*mu31**2 + 3*( nu12**2 +  nu31**2))))))))/(630*k1*k2*k3)
 
-    Bi = Bi + (pk1 + pk2 + pk3)*s1 + s0
+    Bi = (Bi + (pk1 + pk2 + pk3)*s1 + s0)*twoY00
     return Bi
 
 
@@ -70,7 +72,7 @@ def solve_triangular_geometry(k1, k2, k3):
     mu23 = (k2**2 + k3**2 - k1**2)/(2*k2*k3)
     return mu12, mu23, mu31
 
-
+@jit
 def Bisp(var, parc, pk1,pk2,pk3,linear = True):
     '''
     Scoccimaro Bispectrum as a function of 5 variables - k1,k2,k3,mu1,phi12 and cosmological
@@ -81,6 +83,8 @@ def Bisp(var, parc, pk1,pk2,pk3,linear = True):
     f, b1, b2 = parc
 
     mu12 = (k3**2 - k1**2 - k2**2)/(2*k1*k2)
+    #mu12, mu23, mu31 = solve_triangular_geometry(k1, k2, k3)
+    
     mu2 = mu1*mu12 - np.sqrt(1 - mu1**2)*np.sqrt(1 - mu12**2)*np.cos(phi12)
     mu3 = -(mu1*k1 + mu2*k2)/k3
 
@@ -139,4 +143,4 @@ def Bi0(k1, k2, k3, b1, b2, f, s0, s1, pk): #(kk, pk1, pk2, pk3, f, b1, b2, S0, 
         ans,_ = integrate.dblquad(func, -1, 1, lambda x: 0, lambda x: np.pi)
         ans = ans + s0 + s1 * (pk1[i] + pk2[i] + pk3[i]) # Add extra nuissance params. This term is not a part of scoccimaro equation. Skip this step if you want to use only scoccimaro eq.
         out.append(2*Y00*ans)
-    return out
+    return np.array(out)
