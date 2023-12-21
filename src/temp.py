@@ -67,9 +67,13 @@ def tree_level_b00(k1, k2, k3, f, b1, b2, s0, s1, pk):
 
 
 def solve_triangular_geometry(k1, k2, k3):
-    mu12 = (k1**2 + k2**2 - k3**2)/(2*k1*k2)
-    mu31 = (k3**2 + k1**2 - k2**2)/(2*k3*k1)
-    mu23 = (k2**2 + k3**2 - k1**2)/(2*k2*k3)
+    #mu12 = (k1**2 + k2**2 - k3**2)/(2*k1*k2)
+    #mu31 = (k3**2 + k1**2 - k2**2)/(2*k3*k1)
+    #mu23 = (k2**2 + k3**2 - k1**2)/(2*k2*k3)
+    
+    mu12 = (k3**2 - k1**2 - k2**2)/(2*k1*k2)
+    mu31 = -(k1 + k2*mu12)/k3
+    mu23 = -(k1*mu12 + k2)/k3
     return mu12, mu23, mu31
 
 @jit
