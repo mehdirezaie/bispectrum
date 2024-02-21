@@ -13,7 +13,7 @@ temp = sys.argv[4] #'lado'
 use_diag = int(sys.argv[5]) > 0.5
 
 nmocks = 25
-kmax_range = [0.17, 0.19, 0.21, 0.23]  # 0.25 is already done
+kmax_range = [0.17, 0.19, 0.21, 0.23, 0.25] # 0.25 is already done
 kmin = 0.05
 
 if stat=='bk':
