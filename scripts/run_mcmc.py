@@ -34,5 +34,5 @@ for i in range(nmocks):
         ps.select_krange(kmin=kmin, kmax=kmax)
         ps.run_mcmc(nsteps=1000)
         
-    print(f'saving ... mcmc_{stat}_{reduced}_{tracer}_mock{i}_{temp}_p1_p3_1k_{use_diag}.npz')
-    ps.save(f'/localdata/desi/mcmc_{stat}_{reduced}_{tracer}_mock{i}_{temp}_p1_p3_1k_{use_diag}.npz')
+    print(f'saving ... mcmc_{stat}_{reduced}_{tracer}_mock{i}_{temp}_p1_p5_1k_{use_diag}.npz')
+    ps.save(f'/localdata/desi/mcmc_{stat}_{reduced}_{tracer}_mock{i}_{temp}_p1_p5_1k_{use_diag}.npz')

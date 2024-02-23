@@ -10,8 +10,11 @@ mock_range = {'LRGz0':(8000, 8025),
               'QSOz2':(5000, 5025)}  
 
 
-dir_data = '/Users/mehdi/data/'
-path_code = '/Users/mehdi/Downloads/github/bispectrum/'
+#dir_data = '/Users/mehdi/data/'
+#path_code = '/Users/mehdi/Downloads/github/bispectrum/'
+
+dir_data = '/localdata/abacus/'
+path_code = '/lhome/mr095415/linux/github/bispectrum/'
 
 def get_equilateral(k, eps=0.031):
     """ Identify Equilateral """
@@ -221,7 +224,8 @@ class BisPosterior:
     def add_template(self, k_t, r_t):
         self.k_t = k_t
         self.r_t = BiSpectrum(k_t, r_t)
-        
+        print("temp is added")
+
     def add_data(self, k_obs, r_obs, r_cov):
         self.k_obs_ = k_obs*1.
         self.r_obs_ = r_obs*1.
@@ -268,7 +272,7 @@ class BisPosterior:
         np.random.seed(42)
         ndim   = 11
         cov = 0.001*np.eye(11)
-        best = [1.0, 1.0]+9*[0., ]
+        best = [1.02, 1.01]+9*[0.001, ]
         start = np.random.multivariate_normal(best, cov, size=nwalkers)
 
         sampler = emcee.EnsembleSampler(nwalkers, ndim, self.logpost)
@@ -459,16 +463,17 @@ def load_data(tracer, stat, reduced, template, use_diag=False):
         r_cov = r_cov_[reduced] * np.outer(r.std(axis=0), r.std(axis=0)) 
      
     # --- template: TODO
-    if template == 'lado':
+    if template != 'none':
         if stat=='bk':
-            temp = np.loadtxt(f'{path_code}BK_bao_only.txt').T
+            temp = np.loadtxt(f'{path_code}BK_bao_only_{template}.txt')
             k_tem = temp[:, :3]
             r_tem = temp[:, 3]
         else:
-            temp = np.loadtxt(f'{path_code}Pk_bao_only.txt')
+            temp = np.loadtxt(f'{path_code}Pk_bao_only_{template}.txt')
             k_tem = temp[:, :3]
             r_tem = temp[:, 3]
-    else:
+
+    elif template == 'none':
         if stat=='bk':
             k_tem = m.k
             r_tem = m.b.mean(axis=0)/m.b_smooth.mean(axis=0)
