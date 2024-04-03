@@ -7,4 +7,4 @@ echo "stat" $2
 echo "reduce" $3
 echo "template" $4
 echo "use diag" $5
-python run_mcmc.py $1 $2 $3 $4 $5
+python run_mcmc_small.py $1 $2 $3 $4 $5
