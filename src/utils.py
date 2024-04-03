@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.stats import binned_statistic
-from src.models import BiSpectrum, DecayedBiSpectrum, PowerSpectrum
+from src.models import BiSpectrum, DecayedBiSpectrum, PowerSpectrum, BiSpectrum9
 
 from multiprocessing.pool import ThreadPool as Pool
 import emcee
@@ -284,7 +284,16 @@ class BisPosterior:
     def save(self, path2file):
         np.savez(path2file, **{'samples':self.samples, 'kranges':self.kranges})
     
-            
+
+class BisPosterior9(BisPosterior):
+    def __init__(self):
+        super().__init__()
+    
+    def add_template(self, k_t, r_t):
+        self.k_t = k_t
+        self.r_t = BiSpectrum9(k_t, r_t)
+        print("temp 9 is added")
+
 
 class RedBisPosterior:
     def __init__(self):
@@ -437,7 +446,7 @@ class PowPosterior:
 
 def load_data(tracer, stat, reduced, template, use_diag=False):
     print(tracer, stat, reduced, template)
-    if stat=='bk':
+    if 'bk' in stat:
         m = get_bispectra(tracer)
         if reduced=='raw':
             r = m.b / m.b_smooth.mean(axis=0)
@@ -464,7 +473,7 @@ def load_data(tracer, stat, reduced, template, use_diag=False):
      
     # --- template: TODO
     if template != 'none':
-        if stat=='bk':
+        if 'bk' in stat:
             temp = np.loadtxt(f'{path_code}BK_bao_only_{template}.txt')
             k_tem = temp[:, :3]
             r_tem = temp[:, 3]
@@ -474,7 +483,7 @@ def load_data(tracer, stat, reduced, template, use_diag=False):
             r_tem = temp[:, 3]
 
     elif template == 'none':
-        if stat=='bk':
+        if 'bk' in stat:
             k_tem = m.k
             r_tem = m.b.mean(axis=0)/m.b_smooth.mean(axis=0)
         else:
@@ -540,6 +549,40 @@ def solve_triangular_geometry(k1, k2, k3):
     nu31 = (k3**2 + k1**2 - k2**2)/(2*k3*k1)
     nu23 = (k2**2 + k3**2 - k1**2)/(2*k2*k3)
     return nu12, nu23, nu31
+
+
+def extract(bks_files, stat='mean'):
+    """ extract BAO mcmc parameters 
+    """
+    if stat=='mean':
+        means = []
+        for bk_i in bks_files:
+            d = np.load(bk_i, allow_pickle=True)        
+            means_k = []
+            nsamples = len(d['samples'])
+            for i in range(nsamples):            
+                alphas = d['samples'][i]['chain'][300:, :, 0].flatten()
+                means_k.append(np.mean(alphas))
+            means.append(means_k)            
+            
+    elif stat=='bestfit':
+        means = []
+        for bk_i in bks_files:
+            d = np.load(bk_i, allow_pickle=True)        
+            means_k = []
+            nsamples = len(d['samples'])
+            for i in range(nsamples):   
+                ix = np.unravel_index(np.argmax(d['samples'][i]['log_prob']), 
+                                      d['samples'][i]['log_prob'].shape)
+                means_k.append(d['samples'][i]['chain'][ix][0])
+            means.append(means_k)  
+            
+    else:
+        raise ValueError(f'{stat} must bet either mean or bestfit')
+        
+    return np.array(means)
+
+
 
 
 
