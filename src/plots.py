@@ -31,7 +31,7 @@ def setup_color():
     mpl.rcParams['ytick.right'] = True
     mpl.rcParams['xtick.top'] = True
     #mpl.rcParams['font.family'] = "Times"
-    mpl.rcParams['font.size'] = 16
+    mpl.rcParams['font.size'] = 12
     mpl.rcParams['axes.linewidth'] = 2       
     mpl.rcParams['legend.frameon'] = False
     mpl.rcParams['legend.fontsize'] = 12
